@@ -1,6 +1,6 @@
 export type DayOfWeek = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
 
-export type SlotType = 'Free' | 'Class' | 'Busy';
+export type SlotType = 'Free' | 'Class' | 'Busy' | 'Duty';
 
 export interface AvailabilitySlot {
   id: string;
@@ -8,6 +8,7 @@ export interface AvailabilitySlot {
   time: string; // e.g. '08:00 AM', '09:00 AM'
   type: SlotType;
   courseCode?: string;
+  dutyTitle?: string;
 }
 
 export interface IRASParseRequest {
