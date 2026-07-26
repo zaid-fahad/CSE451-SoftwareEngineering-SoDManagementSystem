@@ -224,3 +224,8 @@ dist/
 frontend/dist/
 .DS_Store
 
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
