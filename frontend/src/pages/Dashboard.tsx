@@ -6,7 +6,7 @@ import { AvailabilityGrid } from '../component/Schedule/AvailabilityGrid';
 import { IRASParseModal } from '../component/Schedule/IRASParseModal';
 import { Button } from '../component/UI/Button';
 import { DemoRoleBar } from '../component/UI/DemoRoleBar';
-import { Building2, User, Shield, LogOut, ShieldAlert, FileText, ArrowRight, Download } from 'lucide-react';
+import { Building2, User, Shield, LogOut, ShieldAlert, FileText, ArrowRight, Download, ArrowRightLeft } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -85,6 +85,16 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <Link to="/swaps">
+                <Button
+                  variant="secondary"
+                  className="!py-2 !px-3 text-xs gap-1.5"
+                >
+                  <ArrowRightLeft className="w-4 h-4 text-blue-600" />
+                  <span>Shift Swap Portal</span>
+                </Button>
+              </Link>
+
               <Button
                 variant="primary"
                 onClick={() => setIsParseModalOpen(true)}
