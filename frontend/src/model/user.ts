@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  isActive?: boolean;
 }
 
 export interface RegisterRequest {
@@ -20,7 +21,6 @@ export interface LoginRequest {
   email: string;
   password: string;
 }
-
 
 export interface AuthResponse {
   access_token: string;
