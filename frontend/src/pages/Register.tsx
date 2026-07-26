@@ -29,7 +29,7 @@ export const Register: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.departmentId.trim()) {
-      newErrors.departmentId = 'Department ID is required (e.g. 2021-1-60-001)';
+      newErrors.departmentId = 'Department ID is required';
     }
 
     if (!formData.name.trim()) {
@@ -82,10 +82,10 @@ export const Register: React.FC = () => {
         role: formData.role,
       });
 
-      setSuccessMsg('Account registered successfully! Redirecting...');
+      setSuccessMsg('Account created successfully! Redirecting...');
       setTimeout(() => {
         navigate('/dashboard');
-      }, 1500);
+      }, 1200);
     } catch (err: any) {
       const msg =
         err.response?.data?.detail || err.message || 'Registration failed. Department ID or Email may already exist.';
@@ -98,24 +98,24 @@ export const Register: React.FC = () => {
   return (
     <AuthLayout
       title="Create Account"
-      subtitle="Register your student or staff profile using your Department ID"
+      subtitle="Enter your departmental information to register"
     >
       {apiError && (
-        <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium flex items-center gap-2.5 animate-fadeIn">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
           <span>{apiError}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium flex items-center gap-2.5 animate-fadeIn">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
+        <div className="mb-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{successMsg}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <Input
             label="Department ID"
             name="departmentId"
@@ -148,7 +148,7 @@ export const Register: React.FC = () => {
           error={errors.email}
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <Input
             label="Password"
             type="password"
@@ -172,21 +172,21 @@ export const Register: React.FC = () => {
           />
         </div>
 
-        {/* Role Select Component */}
+        {/* Role Selection */}
         <div className="flex flex-col space-y-1.5 w-full text-left">
-          <label htmlFor="role" className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-            Account Role
+          <label htmlFor="role" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            User Role
           </label>
           <div className="relative flex items-center">
-            <div className="absolute left-3.5 text-slate-400 pointer-events-none">
-              <Building className="w-5 h-5" />
+            <div className="absolute left-3 text-slate-400 pointer-events-none">
+              <Building className="w-4 h-4" />
             </div>
             <select
               id="role"
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="w-full bg-slate-900/90 text-slate-100 text-sm rounded-xl py-3 pl-11 pr-4 border border-slate-800 focus:border-emerald-500/80 focus:ring-emerald-500/20 outline-none focus:ring-4 transition-all duration-200 shadow-inner appearance-none cursor-pointer"
+              className="w-full bg-white text-slate-900 text-sm rounded-md py-2.5 pl-9 pr-3 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors duration-150 appearance-none cursor-pointer"
             >
               <option value="Student">Student (Default)</option>
               <option value="Faculty">Faculty Member</option>
@@ -198,14 +198,14 @@ export const Register: React.FC = () => {
 
         <div className="pt-2">
           <Button type="submit" fullWidth isLoading={isSubmitting}>
-            Register Account
+            Complete Registration
           </Button>
         </div>
       </form>
 
-      <div className="mt-6 text-center text-xs text-slate-400">
+      <div className="mt-5 text-center text-xs text-slate-600">
         Already have an account?{' '}
-        <Link to="/login" className="text-emerald-400 font-semibold hover:underline">
+        <Link to="/login" className="text-blue-600 font-semibold hover:underline">
           Sign In
         </Link>
       </div>

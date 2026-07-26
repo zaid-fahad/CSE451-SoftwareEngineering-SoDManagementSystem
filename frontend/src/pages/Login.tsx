@@ -65,9 +65,9 @@ export const Login: React.FC = () => {
     } catch (err: any) {
       const status = err.response?.status;
       if (status === 401) {
-        setApiError('Invalid credentials. Please verify your email and password.');
+        setApiError('Invalid email address or password.');
       } else {
-        const msg = err.response?.data?.detail || err.message || 'Login failed. Please try again.';
+        const msg = err.response?.data?.detail || err.message || 'Authentication failed. Please try again.';
         setApiError(msg);
       }
     } finally {
@@ -77,19 +77,19 @@ export const Login: React.FC = () => {
 
   return (
     <AuthLayout
-      title="Welcome Back"
-      subtitle="Sign in to access your SoD schedule dashboard and portal"
+      title="Account Sign In"
+      subtitle="Enter your email and password to access the portal"
     >
       {apiError && (
-        <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium flex items-center gap-2.5 animate-fadeIn">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
           <span>{apiError}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium flex items-center gap-2.5 animate-fadeIn">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
+        <div className="mb-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{successMsg}</span>
         </div>
       )}
@@ -121,9 +121,9 @@ export const Login: React.FC = () => {
           </Button>
         </div>
       </form>
-      <div className="mt-6 text-center text-xs text-slate-400">
+      <div className="mt-5 text-center text-xs text-slate-600">
         Don't have an account?{' '}
-        <Link to="/register" className="text-emerald-400 font-semibold hover:underline">
+        <Link to="/register" className="text-blue-600 font-semibold hover:underline">
           Register Account
         </Link>
       </div>
