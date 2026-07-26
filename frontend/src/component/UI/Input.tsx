@@ -20,35 +20,35 @@ export const Input: React.FC<InputProps> = ({
   const inputId = id || `input-${label.toLowerCase().replace(/\s+/g, '-')}`;
 
   return (
-    <div className="flex flex-col space-y-1.5 w-full">
-      <label htmlFor={inputId} className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+    <div className="flex flex-col space-y-1.5 w-full text-left">
+      <label htmlFor={inputId} className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
         {label}
       </label>
       <div className="relative flex items-center">
         {Icon && (
-          <div className="absolute left-3.5 text-slate-400 pointer-events-none transition-colors group-focus-within:text-emerald-400">
-            <Icon className="w-5 h-5" />
+          <div className="absolute left-3 text-slate-400 pointer-events-none">
+            <Icon className="w-4 h-4" />
           </div>
         )}
         <input
           id={inputId}
-          className={`w-full bg-slate-900/90 text-slate-100 text-sm rounded-xl py-3 ${
-            Icon ? 'pl-11' : 'pl-4'
-          } pr-4 border ${
+          className={`w-full bg-white text-slate-900 text-sm rounded-md py-2.5 ${
+            Icon ? 'pl-9' : 'pl-3'
+          } pr-3 border ${
             error
-              ? 'border-rose-500/80 focus:border-rose-500 focus:ring-rose-500/20'
-              : 'border-slate-800 focus:border-emerald-500/80 focus:ring-emerald-500/20'
-          } outline-none focus:ring-4 transition-all duration-200 placeholder:text-slate-500 shadow-inner ${className}`}
+              ? 'border-red-500 focus:border-red-600 focus:ring-2 focus:ring-red-500/20'
+              : 'border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20'
+          } outline-none transition-colors duration-150 placeholder:text-slate-400 ${className}`}
           {...props}
         />
       </div>
       {error && (
-        <span className="text-xs text-rose-400 font-medium flex items-center gap-1 mt-0.5">
+        <span className="text-xs text-red-600 font-medium flex items-center gap-1 mt-0.5">
           <span>•</span> {error}
         </span>
       )}
       {helperText && !error && (
-        <span className="text-xs text-slate-400">{helperText}</span>
+        <span className="text-xs text-slate-500">{helperText}</span>
       )}
     </div>
   );
