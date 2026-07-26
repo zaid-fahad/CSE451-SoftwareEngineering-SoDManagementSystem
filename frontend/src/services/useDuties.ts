@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { DutySlot, DutyCreateRequest } from '../model/duty';
+import { DutySlot, DutyCreateRequest, ScheduleConflict } from '../model/duty';
 import { User } from '../model/user';
+import { DayOfWeek } from '../model/schedule';
 import { api } from './api';
 
 // Sample candidate students available for manager assignment
@@ -11,17 +12,41 @@ export const MOCK_STUDENTS: User[] = [
   { id: 'st-104', department_id: '2021-1-60-112', name: 'Diana Prince', email: 'diana@univ.edu', role: 'Student' },
 ];
 
+// Student schedule conflict rules matrix
+const MOCK_STUDENT_SCHEDULES: Record<string, Record<string, { type: 'Class' | 'Busy'; courseCode?: string }>> = {
+  'st-101': {
+    'Monday-10:00 AM': { type: 'Class', courseCode: 'CSE451' },
+    'Monday-11:00 AM': { type: 'Class', courseCode: 'CSE451' },
+    'Monday-03:00 PM': { type: 'Busy' },
+    'Wednesday-10:00 AM': { type: 'Class', courseCode: 'CSE451' },
+  },
+  'st-102': {
+    'Tuesday-02:00 PM': { type: 'Class', courseCode: 'MAT211' },
+    'Tuesday-03:00 PM': { type: 'Class', courseCode: 'MAT211' },
+    'Thursday-02:00 PM': { type: 'Class', courseCode: 'MAT211' },
+  },
+  'st-103': {
+    'Wednesday-02:00 PM': { type: 'Class', courseCode: 'PHY102' },
+    'Friday-09:00 AM': { type: 'Class', courseCode: 'PHY102' },
+    'Friday-10:00 AM': { type: 'Class', courseCode: 'PHY102' },
+  },
+  'st-104': {
+    'Wednesday-02:00 PM': { type: 'Class', courseCode: 'ENG101' },
+    'Friday-01:00 PM': { type: 'Busy' },
+  },
+};
+
 const INITIAL_DUTIES: DutySlot[] = [
   {
     id: 'duty-1',
     title: 'Software Engineering Lab Assistance',
     location: 'Lab Room 302',
     day: 'Monday',
-    startTime: '09:00 AM',
-    endTime: '11:00 AM',
+    startTime: '10:00 AM',
+    endTime: '12:00 PM',
     type: 'LabDuty',
     maxStudents: 2,
-    assignedStudents: [MOCK_STUDENTS[0]],
+    assignedStudents: [MOCK_STUDENTS[1]],
   },
   {
     id: 'duty-2',
@@ -32,7 +57,7 @@ const INITIAL_DUTIES: DutySlot[] = [
     endTime: '04:00 PM',
     type: 'ExamDuty',
     maxStudents: 3,
-    assignedStudents: [MOCK_STUDENTS[1], MOCK_STUDENTS[2]],
+    assignedStudents: [MOCK_STUDENTS[0]],
   },
   {
     id: 'duty-3',
@@ -50,6 +75,36 @@ const INITIAL_DUTIES: DutySlot[] = [
 export const useDuties = () => {
   const [duties, setDuties] = useState<DutySlot[]>(INITIAL_DUTIES);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Check real-time schedule conflict for a student against a duty slot
+  const checkStudentConflict = useCallback((studentId: string, day: DayOfWeek, startTime: string): ScheduleConflict => {
+    const studentSchedule = MOCK_STUDENT_SCHEDULES[studentId];
+    if (!studentSchedule) return { hasConflict: false };
+
+    const slotKey = `${day}-${startTime}`;
+    const conflict = studentSchedule[slotKey];
+
+    if (conflict) {
+      if (conflict.type === 'Class') {
+        return {
+          hasConflict: true,
+          type: 'Class',
+          conflictingCourse: conflict.courseCode || 'CLASS',
+          timeSlot: `${day} ${startTime}`,
+          reason: `Schedule Conflict: Has class '${conflict.courseCode || 'CLASS'}' on ${day} ${startTime}`,
+        };
+      } else {
+        return {
+          hasConflict: true,
+          type: 'Busy',
+          timeSlot: `${day} ${startTime}`,
+          reason: `Schedule Conflict: Manual busy override on ${day} ${startTime}`,
+        };
+      }
+    }
+
+    return { hasConflict: false };
+  }, []);
 
   const createDuty = useCallback(async (data: DutyCreateRequest): Promise<DutySlot> => {
     setIsLoading(true);
@@ -79,6 +134,11 @@ export const useDuties = () => {
         if (duty.id === dutyId) {
           if (duty.assignedStudents.length >= duty.maxStudents) return duty;
           if (duty.assignedStudents.some((s) => s.id === student.id)) return duty;
+          
+          // Verify conflict guard
+          const conflict = checkStudentConflict(student.id, duty.day, duty.startTime);
+          if (conflict.hasConflict) return duty;
+
           success = true;
           return {
             ...duty,
@@ -89,7 +149,7 @@ export const useDuties = () => {
       })
     );
     return success;
-  }, []);
+  }, [checkStudentConflict]);
 
   const removeStudent = useCallback((dutyId: string, studentId: string) => {
     setDuties((prev) =>
@@ -112,6 +172,7 @@ export const useDuties = () => {
   return {
     duties,
     isLoading,
+    checkStudentConflict,
     createDuty,
     assignStudent,
     removeStudent,
