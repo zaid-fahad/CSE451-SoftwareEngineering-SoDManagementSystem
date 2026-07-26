@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Building2,
   CalendarSearch,
+  Calendar,
   FileSpreadsheet,
   LogOut,
   Menu,
@@ -65,6 +66,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       path: '/manager/student-calendars',
       icon: CalendarSearch,
       roles: ['LabManager', 'DeptManager', 'Faculty'],
+    },
+    {
+      label: 'Master Department Schedule',
+      path: '/manager/master-calendar',
+      icon: Calendar,
+      roles: ['LabManager', 'DeptManager'],
     },
     {
       label: 'User Administration',
