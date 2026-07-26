@@ -61,6 +61,11 @@ export const BillApprovalList: React.FC<BillApprovalListProps> = ({
                   <div className="font-bold text-slate-900">{bill.studentName}</div>
                   <div className="text-[11px] text-slate-500 font-mono">Dept ID: {bill.departmentId}</div>
                   <div className="text-[10px] text-slate-400 mt-0.5">Submitted {bill.submittedAt}</div>
+                  <div className="mt-1.5 p-1.5 rounded bg-blue-50/70 border border-blue-200 text-[10px] space-y-0.5">
+                    <span className="font-bold text-blue-900 block uppercase">Associated Duty Slots:</span>
+                    <div className="text-slate-700 font-medium">📍 CS101 Lab Supervision (Room 302 - Mon 08:00 AM)</div>
+                    <div className="text-slate-700 font-medium">📍 CS202 Exam Proctoring (Auditorium B - Wed 10:00 AM)</div>
+                  </div>
                 </td>
 
                 {/* Month */}

@@ -10,6 +10,7 @@ import {
   Building2,
   CalendarSearch,
   Calendar,
+  ClipboardCheck,
   FileSpreadsheet,
   LogOut,
   Menu,
@@ -72,6 +73,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       path: '/manager/master-calendar',
       icon: Calendar,
       roles: ['LabManager', 'DeptManager'],
+    },
+    {
+      label: 'Duty Attendance & Hours',
+      path: '/manager/attendance',
+      icon: ClipboardCheck,
+      roles: ['LabManager', 'DeptManager', 'Faculty'],
     },
     {
       label: 'User Administration',

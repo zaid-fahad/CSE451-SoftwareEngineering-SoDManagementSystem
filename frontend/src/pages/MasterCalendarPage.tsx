@@ -3,11 +3,16 @@ import { useDuties } from '../services/useDuties';
 import { DAYS, HOURS } from '../services/useSchedule';
 import { DayOfWeek } from '../model/schedule';
 import { DutySlot } from '../model/duty';
-import { Calendar, MapPin, Clock, Users, Search } from 'lucide-react';
+import { CreateDutyModal } from '../component/Duty/CreateDutyModal';
+import { AssignStudentModal } from '../component/Duty/AssignStudentModal';
+import { Button } from '../component/UI/Button';
+import { Calendar, MapPin, Clock, Users, Search, Plus, UserPlus } from 'lucide-react';
 
 export const MasterCalendarPage: React.FC = () => {
-  const { duties } = useDuties();
+  const { duties, createDuty, assignStudent, checkStudentConflict } = useDuties();
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [assignModalDuty, setAssignModalDuty] = useState<DutySlot | null>(null);
 
   const filteredDuties = duties.filter((d: DutySlot) => {
     const q = searchQuery.toLowerCase();
@@ -38,23 +43,34 @@ export const MasterCalendarPage: React.FC = () => {
         <div className="space-y-1">
           <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <Calendar className="w-6 h-6 text-blue-600" />
-            <span>Master Department Schedule & Duty Calendar</span>
+            <span>Master Department Schedule & Duty Operations</span>
           </h1>
           <p className="text-xs text-slate-500">
             Comprehensive weekly timetable overview of all departmental lab duties, exam proctoring windows, room locations, and assigned student assistants.
           </p>
         </div>
 
-        {/* Live Search Input */}
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search master calendar duty..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white text-slate-900 text-xs rounded-md py-2 pl-9 pr-3 border border-slate-300 focus:border-blue-600 outline-none"
-          />
+        <div className="flex items-center gap-3">
+          {/* Live Search Input */}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search master calendar duty..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white text-slate-900 text-xs rounded-md py-2 pl-9 pr-3 border border-slate-300 focus:border-blue-600 outline-none"
+            />
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={() => setIsCreateModalOpen(true)}
+            className="!py-2 !px-4 text-xs gap-1.5 shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Duty Slot</span>
+          </Button>
         </div>
       </div>
 
@@ -129,39 +145,57 @@ export const MasterCalendarPage: React.FC = () => {
                     return (
                       <td key={day} className="p-2 border-r border-slate-200 last:border-r-0 align-top h-24">
                         {cellDuties.length === 0 ? (
-                          <div className="h-full rounded border border-dashed border-slate-200 flex items-center justify-center text-[10px] text-slate-300">
-                            Available Window
-                          </div>
+                          <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="w-full h-full rounded border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/40 transition-colors flex items-center justify-center text-[10px] text-slate-400 hover:text-blue-600 gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Duty</span>
+                          </button>
                         ) : (
                           <div className="space-y-1.5">
-                            {cellDuties.map((duty: DutySlot) => (
-                              <div
-                                key={duty.id}
-                                className={`p-2 rounded-md border shadow-xs text-left space-y-1 ${getDutyBadgeColor(duty.type)}`}
-                              >
-                                <div className="font-bold text-xs leading-snug">{duty.title}</div>
-                                <div className="text-[10px] opacity-90 flex items-center gap-1 font-mono">
-                                  <MapPin className="w-3 h-3" />
-                                  <span>{duty.location}</span>
-                                </div>
-                                <div className="text-[10px] opacity-90 flex items-center gap-1 font-mono">
-                                  <Clock className="w-3 h-3" />
-                                  <span>{duty.startTime} - {duty.endTime}</span>
-                                </div>
-
-                                {duty.assignedStudents.length > 0 && (
-                                  <div className="pt-1 border-t border-white/20 text-[10px] space-y-0.5">
-                                    <div className="font-semibold flex items-center gap-1">
-                                      <Users className="w-3 h-3" />
-                                      <span>Assigned ({duty.assignedStudents.length}):</span>
-                                    </div>
-                                    <div className="truncate font-medium opacity-95">
-                                      {duty.assignedStudents.map((s) => s.name).join(', ')}
-                                    </div>
+                            {cellDuties.map((duty: DutySlot) => {
+                              const isFull = duty.assignedStudents.length >= duty.maxStudents;
+                              return (
+                                <div
+                                  key={duty.id}
+                                  className={`p-2 rounded-md border shadow-xs text-left space-y-1 ${getDutyBadgeColor(duty.type)}`}
+                                >
+                                  <div className="font-bold text-xs leading-snug">{duty.title}</div>
+                                  <div className="text-[10px] opacity-90 flex items-center gap-1 font-mono">
+                                    <MapPin className="w-3 h-3" />
+                                    <span>{duty.location}</span>
                                   </div>
-                                )}
-                              </div>
-                            ))}
+                                  <div className="text-[10px] opacity-90 flex items-center gap-1 font-mono">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{duty.startTime} - {duty.endTime}</span>
+                                  </div>
+
+                                  {duty.assignedStudents.length > 0 && (
+                                    <div className="pt-1 border-t border-white/20 text-[10px] space-y-0.5">
+                                      <div className="font-semibold flex items-center gap-1">
+                                        <Users className="w-3 h-3" />
+                                        <span>Assigned ({duty.assignedStudents.length}):</span>
+                                      </div>
+                                      <div className="truncate font-medium opacity-95">
+                                        {duty.assignedStudents.map((s) => s.name).join(', ')}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="pt-1">
+                                    <button
+                                      onClick={() => setAssignModalDuty(duty)}
+                                      disabled={isFull}
+                                      className="w-full py-0.5 px-1.5 rounded bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
+                                    >
+                                      <UserPlus className="w-3 h-3" />
+                                      <span>{isFull ? 'Slot Full' : 'Assign Student'}</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </td>
@@ -173,6 +207,21 @@ export const MasterCalendarPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateDutyModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={createDuty}
+      />
+
+      <AssignStudentModal
+        isOpen={!!assignModalDuty}
+        duty={assignModalDuty}
+        onClose={() => setAssignModalDuty(null)}
+        onAssign={assignStudent}
+        checkStudentConflict={checkStudentConflict}
+      />
     </div>
   );
 };
