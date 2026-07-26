@@ -110,22 +110,31 @@ export const Dashboard: React.FC = () => {
           onLoadDemoData={loadDemoData}
         />
 
-        {/* Admin Navigation Quick Link */}
-        <div className="card-enterprise p-5 flex items-center justify-between">
+        {/* Admin Navigation Quick Links */}
+        <div className="card-enterprise p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-left">
-            <Shield className="w-4 h-4 text-blue-600" />
+            <Shield className="w-4 h-4 text-blue-600 shrink-0" />
             <div>
-              <h4 className="text-xs font-bold text-slate-900">Restricted Route Test</h4>
-              <p className="text-[11px] text-slate-500">Test RBAC guard permission checks on restricted admin routes</p>
+              <h4 className="text-xs font-bold text-slate-900">Manager & Admin Controls</h4>
+              <p className="text-[11px] text-slate-500">Access duty slot management and financial approval pipeline</p>
             </div>
           </div>
 
-          <Link to="/admin/billing">
-            <Button variant="outline" className="!py-1.5 !px-3 text-xs gap-1.5">
-              <span>/admin/billing</span>
-              <ArrowRight className="w-3 h-3" />
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/manager/duties">
+              <Button variant="secondary" className="!py-1.5 !px-3 text-xs gap-1.5">
+                <span>Duty Manager</span>
+                <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Link>
+
+            <Link to="/admin/billing">
+              <Button variant="outline" className="!py-1.5 !px-3 text-xs gap-1.5">
+                <span>Billing Pipeline</span>
+                <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
       </main>
