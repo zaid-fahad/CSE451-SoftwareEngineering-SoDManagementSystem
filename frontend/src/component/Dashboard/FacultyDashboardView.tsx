@@ -4,7 +4,7 @@ import { DutySlot } from '../../model/duty';
 import { User } from '../../model/user';
 import { DutyList } from '../Duty/DutyList';
 import { Button } from '../UI/Button';
-import { GraduationCap, Users, FileSpreadsheet, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, Users, FileSpreadsheet, CheckCircle2, Calendar } from 'lucide-react';
 
 interface FacultyDashboardViewProps {
   user: User | null;
@@ -72,13 +72,22 @@ export const FacultyDashboardView: React.FC<FacultyDashboardViewProps> = ({ user
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {supervisedStudents.map((st) => (
-            <div key={st.id} className="p-3.5 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
-              <div>
-                <span className="font-bold text-slate-900 block">{st.name}</span>
-                <span className="text-[11px] text-slate-500">{st.email}</span>
-                <span className="text-[10px] text-slate-400 block font-mono">ID: {st.department_id}</span>
+            <div key={st.id} className="p-3.5 rounded-lg border border-slate-200 bg-slate-50 flex flex-col justify-between space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-slate-900 block">{st.name}</span>
+                  <span className="text-[11px] text-slate-500">{st.email}</span>
+                  <span className="text-[10px] text-slate-400 block font-mono">ID: {st.department_id}</span>
+                </div>
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               </div>
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+
+              <Link to="/manager/student-calendars">
+                <Button variant="outline" fullWidth className="!py-1 text-[11px] gap-1">
+                  <Calendar className="w-3 h-3 text-blue-600" />
+                  <span>Inspect Calendar</span>
+                </Button>
+              </Link>
             </div>
           ))}
         </div>

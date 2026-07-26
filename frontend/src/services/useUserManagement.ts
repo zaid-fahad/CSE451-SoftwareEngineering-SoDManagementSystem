@@ -18,6 +18,14 @@ export interface AddUserPayload {
   role: UserRole;
 }
 
+export interface UpdateUserPayload {
+  name: string;
+  email: string;
+  department_id: string;
+  role: UserRole;
+  isActive: boolean;
+}
+
 export const useUserManagement = () => {
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -46,6 +54,24 @@ export const useUserManagement = () => {
     }
   }, []);
 
+  const updateUser = useCallback((userId: string, payload: UpdateUserPayload) => {
+    setUsers((prev) =>
+      prev.map((u) => {
+        if (u.id === userId) {
+          return {
+            ...u,
+            name: payload.name,
+            email: payload.email,
+            department_id: payload.department_id,
+            role: payload.role,
+            isActive: payload.isActive,
+          };
+        }
+        return u;
+      })
+    );
+  }, []);
+
   const toggleUserStatus = useCallback((userId: string) => {
     setUsers((prev) =>
       prev.map((u) => {
@@ -65,6 +91,7 @@ export const useUserManagement = () => {
     users,
     isLoading,
     addUser,
+    updateUser,
     toggleUserStatus,
     deleteUser,
   };
