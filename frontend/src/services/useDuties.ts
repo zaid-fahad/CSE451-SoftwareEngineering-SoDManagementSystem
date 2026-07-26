@@ -109,15 +109,31 @@ export const useDuties = () => {
   const createDuty = useCallback(async (data: DutyCreateRequest): Promise<DutySlot> => {
     setIsLoading(true);
     try {
+      const initialAssigned: User[] = [];
+      if (data.assignedStudentId) {
+        const student = MOCK_STUDENTS.find((s) => s.id === data.assignedStudentId);
+        if (student) initialAssigned.push(student);
+      }
+
       try {
         const res = await api.post<DutySlot>('/duties', data);
-        setDuties((prev) => [res.data, ...prev]);
-        return res.data;
+        const created = {
+          ...res.data,
+          assignedStudents: res.data.assignedStudents || initialAssigned,
+        };
+        setDuties((prev) => [created, ...prev]);
+        return created;
       } catch {
         const newDuty: DutySlot = {
           id: `duty-${Date.now()}`,
-          ...data,
-          assignedStudents: [],
+          title: data.title,
+          location: data.location,
+          day: data.day,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          type: data.type,
+          maxStudents: data.maxStudents,
+          assignedStudents: initialAssigned,
         };
         setDuties((prev) => [newDuty, ...prev]);
         return newDuty;

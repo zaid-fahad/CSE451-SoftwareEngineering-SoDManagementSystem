@@ -18,7 +18,8 @@ export const HOURS = [
 ];
 
 // Default pre-populated realistic dummy data schedule
-const defaultDummySchedule: Record<string, { type: SlotType; courseCode?: string }> = {
+const defaultDummySchedule: Record<string, { type: SlotType; courseCode?: string; dutyTitle?: string }> = {
+  'Monday-09:00 AM': { type: 'Duty', dutyTitle: 'SE Lab Duty' },
   'Monday-10:00 AM': { type: 'Class', courseCode: 'CSE451' },
   'Monday-11:00 AM': { type: 'Class', courseCode: 'CSE451' },
   'Monday-03:00 PM': { type: 'Busy' },
@@ -50,6 +51,7 @@ const initializeGrid = (): AvailabilitySlot[] => {
         time,
         type: dummy ? dummy.type : 'Free',
         courseCode: dummy?.courseCode,
+        dutyTitle: dummy?.dutyTitle,
       });
     });
   });

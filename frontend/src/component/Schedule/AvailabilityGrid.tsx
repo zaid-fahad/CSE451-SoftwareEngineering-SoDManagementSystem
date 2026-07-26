@@ -110,31 +110,36 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
                   const slot = getSlot(day, hour);
                   const isClass = slot?.type === 'Class';
                   const isBusy = slot?.type === 'Busy';
+                  const isDuty = slot?.type === 'Duty';
 
                   return (
                     <td
                       key={`${day}-${hour}`}
-                      onClick={() => !isClass && onToggleSlot(day, hour)}
+                      onClick={() => !isClass && !isDuty && onToggleSlot(day, hour)}
                       className={`p-2 border-r border-slate-200 last:border-r-0 text-center transition-colors duration-150 select-none ${
-                        isClass
+                        isDuty
+                          ? 'bg-blue-600 border-blue-700 text-white cursor-default shadow-xs'
+                          : isClass
                           ? 'bg-rose-50 border-rose-200 text-rose-800 cursor-not-allowed'
                           : isBusy
                           ? 'bg-amber-50 border-amber-200 text-amber-900 cursor-pointer hover:bg-amber-100'
                           : 'bg-white hover:bg-slate-100 cursor-pointer text-slate-400'
                       }`}
                     >
-                      {isClass ? (
+                      {isDuty ? (
+                        <div className="font-bold text-[11px] flex flex-col items-center justify-center">
+                          <span>DUTY ASSIGNED</span>
+                          <span className="text-[9px] font-medium text-blue-100">{slot?.dutyTitle || 'Lab Duty'}</span>
+                        </div>
+                      ) : isClass ? (
                         <div className="font-bold text-[11px] flex flex-col items-center justify-center">
                           <span>{slot?.courseCode || 'CLASS'}</span>
                           <span className="text-[9px] font-medium text-rose-600">Locked</span>
                         </div>
                       ) : isBusy ? (
-                        <div className="font-semibold text-[11px] text-amber-800 flex flex-col items-center">
-                          <span>BUSY</span>
-                          <span className="text-[9px] text-amber-600 font-normal">User Override</span>
-                        </div>
+                        <div className="font-semibold text-[11px] text-amber-800">Busy</div>
                       ) : (
-                        <span className="text-[10px] text-slate-300 font-normal">Available</span>
+                        <span className="text-[10px] text-slate-300 font-medium">Free</span>
                       )}
                     </td>
                   );

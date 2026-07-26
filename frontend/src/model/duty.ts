@@ -31,4 +31,5 @@ export interface DutyCreateRequest {
   endTime: string;
   type: DutyType;
   maxStudents: number;
+  assignedStudentId?: string;
 }
