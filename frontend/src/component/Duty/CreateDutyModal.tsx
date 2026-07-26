@@ -202,39 +202,58 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
             />
 
             <div className="flex flex-col space-y-1.5 w-full text-left">
-              <label htmlFor="assignedStudentId" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Initial Student
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Initial Student Assignment
               </label>
-              <select
-                id="assignedStudentId"
-                name="assignedStudentId"
-                value={formData.assignedStudentId || ''}
-                onChange={handleChange}
-                className="w-full bg-white text-slate-900 text-xs rounded-md p-2.5 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer"
-              >
-                <option value="">None (Assign later)</option>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, assignedStudentId: '' }))}
+                  className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer border transition-colors ${
+                    !formData.assignedStudentId
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                  }`}
+                >
+                  None
+                </button>
                 {MOCK_STUDENTS.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.name} ({st.department_id})
-                  </option>
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, assignedStudentId: st.id }))}
+                    className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer border transition-colors ${
+                      formData.assignedStudentId === st.id
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    {st.name}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="flex flex-col space-y-1.5 w-full text-left">
-              <label htmlFor="assignedFaculty" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Supervising Faculty
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Supervising Faculty Member
               </label>
-              <select
-                id="assignedFaculty"
-                name="assignedFaculty"
-                value={formData.assignedFaculty || ''}
-                onChange={handleChange}
-                className="w-full bg-white text-slate-900 text-xs rounded-md p-2.5 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer"
-              >
-                <option value="Dr. Sarah Connor (Faculty)">Dr. Sarah Connor (Faculty)</option>
-                <option value="Prof. Alan Turing (Faculty)">Prof. Alan Turing (Faculty)</option>
-              </select>
+              <div className="flex flex-wrap gap-1.5">
+                {['Dr. Sarah Connor (Faculty)', 'Prof. Alan Turing (Faculty)'].map((fac) => (
+                  <button
+                    key={fac}
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, assignedFaculty: fac }))}
+                    className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer border transition-colors ${
+                      formData.assignedFaculty === fac
+                        ? 'bg-purple-600 text-white border-purple-600'
+                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    {fac.split(' ')[0]} {fac.split(' ')[1]} {fac.split(' ')[2]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

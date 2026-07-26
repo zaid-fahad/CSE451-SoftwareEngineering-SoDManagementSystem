@@ -13,6 +13,7 @@ import { FacultyPortal } from './pages/FacultyPortal';
 import { StudentCalendarInspector } from './pages/StudentCalendarInspector';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { MasterCalendarPage } from './pages/MasterCalendarPage';
+import { AttendanceManagerPage } from './pages/AttendanceManagerPage';
 import { ProtectedRoute } from './component/Auth/ProtectedRoute';
 
 export const App: React.FC = () => {
@@ -91,6 +92,16 @@ export const App: React.FC = () => {
               <ProtectedRoute allowedRoles={['LabManager', 'DeptManager']}>
                 <AppLayout>
                   <MasterCalendarPage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/attendance"
+            element={
+              <ProtectedRoute allowedRoles={['LabManager', 'DeptManager', 'Faculty']}>
+                <AppLayout>
+                  <AttendanceManagerPage />
                 </AppLayout>
               </ProtectedRoute>
             }

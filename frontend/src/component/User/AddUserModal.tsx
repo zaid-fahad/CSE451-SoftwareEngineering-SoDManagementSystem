@@ -112,21 +112,30 @@ export const AddUserModal: React.FC<AddUserModalProps> = ({
           />
 
           <div className="flex flex-col space-y-1.5 w-full text-left">
-            <label htmlFor="userRole" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
               Assigned User Role
             </label>
-            <select
-              id="userRole"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full bg-white text-slate-900 text-xs rounded-md p-2.5 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer"
-            >
-              <option value="Student">Student Assistant</option>
-              <option value="Faculty">Faculty Member</option>
-              <option value="LabManager">Lab Manager</option>
-              <option value="DeptManager">Department Manager</option>
-            </select>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { role: 'Student', label: 'Student Assistant' },
+                { role: 'Faculty', label: 'Faculty Member' },
+                { role: 'LabManager', label: 'Lab Manager' },
+                { role: 'DeptManager', label: 'Dept Manager' },
+              ].map((r) => (
+                <button
+                  key={r.role}
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, role: r.role as any }))}
+                  className={`py-2 px-3 rounded-md text-xs font-semibold cursor-pointer border transition-colors ${
+                    formData.role === r.role
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
