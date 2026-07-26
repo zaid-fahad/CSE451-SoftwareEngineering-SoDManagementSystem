@@ -6,6 +6,7 @@ import { DutyList } from '../component/Duty/DutyList';
 import { CreateDutyModal } from '../component/Duty/CreateDutyModal';
 import { AssignStudentModal } from '../component/Duty/AssignStudentModal';
 import { Button } from '../component/UI/Button';
+import { DemoRoleBar } from '../component/UI/DemoRoleBar';
 import { Building2, Plus, ArrowLeft, Calendar, ShieldCheck, LogOut } from 'lucide-react';
 import { DutySlot } from '../model/duty';
 
@@ -19,6 +20,9 @@ export const DutyManager: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+      {/* Demo Interactive Role Bar */}
+      <DemoRoleBar />
+
       {/* Top Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">

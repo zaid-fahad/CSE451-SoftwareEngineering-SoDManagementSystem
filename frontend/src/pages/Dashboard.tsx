@@ -5,6 +5,7 @@ import { useSchedule } from '../services/useSchedule';
 import { AvailabilityGrid } from '../component/Schedule/AvailabilityGrid';
 import { IRASParseModal } from '../component/Schedule/IRASParseModal';
 import { Button } from '../component/UI/Button';
+import { DemoRoleBar } from '../component/UI/DemoRoleBar';
 import { Building2, User, Shield, LogOut, ShieldAlert, FileText, ArrowRight, Download } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
@@ -21,6 +22,9 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
+      {/* Demo Interactive Role Bar */}
+      <DemoRoleBar />
+
       {/* Top Enterprise Header Bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
