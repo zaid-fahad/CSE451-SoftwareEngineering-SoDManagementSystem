@@ -8,12 +8,14 @@ interface AvailabilityGridProps {
   slots: AvailabilitySlot[];
   onToggleSlot: (day: DayOfWeek, time: string) => void;
   onResetGrid?: () => void;
+  onLoadDemoData?: () => void;
 }
 
 export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
   slots,
   onToggleSlot,
   onResetGrid,
+  onLoadDemoData,
 }) => {
   // Metric calculations
   const classCount = slots.filter((s) => s.type === 'Class').length;
@@ -54,10 +56,16 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
             <span>{busyCount} Manual Overrides</span>
           </div>
 
+          {onLoadDemoData && (
+            <Button variant="secondary" onClick={onLoadDemoData} className="!py-1 !px-2 text-xs">
+              <span>Demo Schedule</span>
+            </Button>
+          )}
+
           {onResetGrid && (
             <Button variant="outline" onClick={onResetGrid} className="!py-1 !px-2 text-xs gap-1">
               <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
+              <span>Clear All</span>
             </Button>
           )}
         </div>

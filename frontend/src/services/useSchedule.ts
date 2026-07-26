@@ -17,16 +17,39 @@ export const HOURS = [
   '05:00 PM',
 ];
 
-// Helper to generate initial 6-day x 10-hour grid
+// Default pre-populated realistic dummy data schedule
+const defaultDummySchedule: Record<string, { type: SlotType; courseCode?: string }> = {
+  'Monday-10:00 AM': { type: 'Class', courseCode: 'CSE451' },
+  'Monday-11:00 AM': { type: 'Class', courseCode: 'CSE451' },
+  'Monday-03:00 PM': { type: 'Busy' },
+
+  'Tuesday-02:00 PM': { type: 'Class', courseCode: 'MAT211' },
+  'Tuesday-03:00 PM': { type: 'Class', courseCode: 'MAT211' },
+
+  'Wednesday-10:00 AM': { type: 'Class', courseCode: 'CSE451' },
+  'Wednesday-11:00 AM': { type: 'Class', courseCode: 'CSE451' },
+
+  'Thursday-02:00 PM': { type: 'Class', courseCode: 'MAT211' },
+  'Thursday-03:00 PM': { type: 'Class', courseCode: 'MAT211' },
+
+  'Friday-09:00 AM': { type: 'Class', courseCode: 'PHY102' },
+  'Friday-10:00 AM': { type: 'Class', courseCode: 'PHY102' },
+  'Friday-01:00 PM': { type: 'Busy' },
+};
+
+// Helper to generate initial 6-day x 10-hour grid with pre-populated dummy data
 const initializeGrid = (): AvailabilitySlot[] => {
   const grid: AvailabilitySlot[] = [];
   DAYS.forEach((day) => {
     HOURS.forEach((time) => {
+      const key = `${day}-${time}`;
+      const dummy = defaultDummySchedule[key];
       grid.push({
-        id: `${day}-${time}`,
+        id: key,
         day,
         time,
-        type: 'Free',
+        type: dummy ? dummy.type : 'Free',
+        courseCode: dummy?.courseCode,
       });
     });
   });
@@ -57,7 +80,6 @@ export const useSchedule = () => {
     let parsedCount = 0;
 
     try {
-      // Try backend API first if online
       const res = await api.post('/schedule/parse', { raw_text: rawText });
       if (res.data && res.data.slots) {
         setSlots(res.data.slots);
@@ -68,7 +90,6 @@ export const useSchedule = () => {
       const updatedGrid = initializeGrid();
       const textLines = rawText.split('\n');
 
-      // Sample patterns: "CSE451 Monday 10:00 AM - 12:00 PM", "PHY101 Mon 08:00 AM"
       const dayMap: Record<string, DayOfWeek> = {
         mon: 'Monday',
         monday: 'Monday',
@@ -91,7 +112,6 @@ export const useSchedule = () => {
         Object.keys(dayMap).forEach((key) => {
           if (lower.includes(key)) {
             const targetDay = dayMap[key];
-            // Match course code pattern e.g., CSE451, MAT101, PHY102
             const courseMatch = line.match(/([A-Z]{2,4}\s*\d{3})/i);
             const courseCode = courseMatch ? courseMatch[1].toUpperCase() : 'CLASS';
 
@@ -100,7 +120,6 @@ export const useSchedule = () => {
               const isPM = hour.includes('PM') && hourNum !== 12;
               const normalizedHour = isPM ? hourNum + 12 : hourNum;
 
-              // If line references hour substring e.g. "10:00", "11:00", "02:00"
               if (lower.includes(hour.slice(0, 5).toLowerCase()) || lower.includes(`${normalizedHour}:00`)) {
                 const targetIdx = updatedGrid.findIndex((s) => s.day === targetDay && s.time === hour);
                 if (targetIdx !== -1) {
@@ -117,25 +136,6 @@ export const useSchedule = () => {
         });
       });
 
-      // Default mock parse if no specific matches found to guarantee demonstration
-      if (parsedCount === 0 && rawText.length > 10) {
-        const sampleClasses = [
-          { day: 'Monday' as DayOfWeek, time: '10:00 AM', course: 'CSE451' },
-          { day: 'Monday' as DayOfWeek, time: '11:00 AM', course: 'CSE451' },
-          { day: 'Wednesday' as DayOfWeek, time: '02:00 PM', course: 'MAT211' },
-          { day: 'Wednesday' as DayOfWeek, time: '03:00 PM', course: 'MAT211' },
-          { day: 'Friday' as DayOfWeek, time: '09:00 AM', course: 'PHY102' },
-        ];
-
-        sampleClasses.forEach((sc) => {
-          const idx = updatedGrid.findIndex((s) => s.day === sc.day && s.time === sc.time);
-          if (idx !== -1) {
-            updatedGrid[idx] = { ...updatedGrid[idx], type: 'Class', courseCode: sc.course };
-            parsedCount++;
-          }
-        });
-      }
-
       setSlots(updatedGrid);
     } finally {
       setIsLoading(false);
@@ -144,8 +144,19 @@ export const useSchedule = () => {
     return parsedCount;
   }, []);
 
-  const resetGrid = useCallback(() => {
+  const loadDemoData = useCallback(() => {
     setSlots(initializeGrid());
+  }, []);
+
+  const resetGrid = useCallback(() => {
+    // Reset all to free
+    const emptyGrid: AvailabilitySlot[] = [];
+    DAYS.forEach((day) => {
+      HOURS.forEach((time) => {
+        emptyGrid.push({ id: `${day}-${time}`, day, time, type: 'Free' });
+      });
+    });
+    setSlots(emptyGrid);
   }, []);
 
   return {
@@ -153,6 +164,7 @@ export const useSchedule = () => {
     isLoading,
     toggleSlot,
     parseIRASText,
+    loadDemoData,
     resetGrid,
   };
 };

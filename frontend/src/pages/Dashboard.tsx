@@ -9,7 +9,7 @@ import { Building2, User, Shield, LogOut, ShieldAlert, FileText, ArrowRight, Dow
 
 export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
-  const { slots, toggleSlot, parseIRASText, resetGrid } = useSchedule();
+  const { slots, toggleSlot, parseIRASText, loadDemoData, resetGrid } = useSchedule();
   const location = useLocation();
   const state = location.state as { accessDenied?: boolean; message?: string } | null;
 
@@ -107,6 +107,7 @@ export const Dashboard: React.FC = () => {
           slots={slots}
           onToggleSlot={toggleSlot}
           onResetGrid={resetGrid}
+          onLoadDemoData={loadDemoData}
         />
 
         {/* Admin Navigation Quick Link */}
