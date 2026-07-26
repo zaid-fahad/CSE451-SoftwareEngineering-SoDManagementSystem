@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { AdminBilling } from './pages/AdminBilling';
 import { DutyManager } from './pages/DutyManager';
+import { SwapPortal } from './pages/SwapPortal';
 import { ProtectedRoute } from './component/Auth/ProtectedRoute';
 
 export const App: React.FC = () => {
@@ -21,6 +22,14 @@ export const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/swaps"
+            element={
+              <ProtectedRoute>
+                <SwapPortal />
               </ProtectedRoute>
             }
           />
