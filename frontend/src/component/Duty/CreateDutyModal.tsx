@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Calendar, MapPin, Users, Tag, AlertCircle, UserPlus } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Tag, AlertCircle } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Input } from '../UI/Input';
 import { DutyCreateRequest } from '../../model/duty';
@@ -189,9 +189,9 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input
-              label="Max Students Needed"
+              label="Max Capacity"
               type="number"
               min={1}
               max={10}
@@ -203,27 +203,38 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
 
             <div className="flex flex-col space-y-1.5 w-full text-left">
               <label htmlFor="assignedStudentId" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Initial Student (Optional)
+                Initial Student
               </label>
-              <div className="relative flex items-center">
-                <div className="absolute left-3 text-slate-400 pointer-events-none">
-                  <UserPlus className="w-4 h-4" />
-                </div>
-                <select
-                  id="assignedStudentId"
-                  name="assignedStudentId"
-                  value={formData.assignedStudentId}
-                  onChange={handleChange}
-                  className="w-full bg-white text-slate-900 text-xs rounded-md py-2.5 pl-9 pr-3 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer"
-                >
-                  <option value="">None (Assign later)</option>
-                  {MOCK_STUDENTS.map((st) => (
-                    <option key={st.id} value={st.id}>
-                      {st.name} ({st.department_id})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                id="assignedStudentId"
+                name="assignedStudentId"
+                value={formData.assignedStudentId || ''}
+                onChange={handleChange}
+                className="w-full bg-white text-slate-900 text-xs rounded-md p-2.5 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer"
+              >
+                <option value="">None (Assign later)</option>
+                {MOCK_STUDENTS.map((st) => (
+                  <option key={st.id} value={st.id}>
+                    {st.name} ({st.department_id})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col space-y-1.5 w-full text-left">
+              <label htmlFor="assignedFaculty" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Supervising Faculty
+              </label>
+              <select
+                id="assignedFaculty"
+                name="assignedFaculty"
+                value={formData.assignedFaculty || ''}
+                onChange={handleChange}
+                className="w-full bg-white text-slate-900 text-xs rounded-md p-2.5 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer"
+              >
+                <option value="Dr. Sarah Connor (Faculty)">Dr. Sarah Connor (Faculty)</option>
+                <option value="Prof. Alan Turing (Faculty)">Prof. Alan Turing (Faculty)</option>
+              </select>
             </div>
           </div>
 

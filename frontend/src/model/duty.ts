@@ -21,6 +21,7 @@ export interface DutySlot {
   type: DutyType;
   maxStudents: number;
   assignedStudents: User[];
+  assignedFaculty?: string;
 }
 
 export interface DutyCreateRequest {
@@ -32,4 +33,5 @@ export interface DutyCreateRequest {
   type: DutyType;
   maxStudents: number;
   assignedStudentId?: string;
+  assignedFaculty?: string;
 }

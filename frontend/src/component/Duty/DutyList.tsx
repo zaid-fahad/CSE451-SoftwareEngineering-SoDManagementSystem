@@ -1,6 +1,6 @@
 import React from 'react';
 import { DutySlot } from '../../model/duty';
-import { MapPin, Clock, Users, UserPlus, Trash2, CheckCircle2 } from 'lucide-react';
+import { MapPin, Clock, Users, UserPlus, Trash2, CheckCircle2, GraduationCap } from 'lucide-react';
 import { Button } from '../UI/Button';
 
 interface DutyListProps {
@@ -71,6 +71,13 @@ export const DutyList: React.FC<DutyListProps> = ({
                   <span>{duty.day} {duty.startTime} - {duty.endTime}</span>
                 </div>
               </div>
+
+              {duty.assignedFaculty && (
+                <div className="text-[11px] text-purple-700 font-medium flex items-center gap-1 pt-1">
+                  <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Supervisor: <strong>{duty.assignedFaculty}</strong></span>
+                </div>
+              )}
             </div>
 
             {/* Assigned Students Section */}
