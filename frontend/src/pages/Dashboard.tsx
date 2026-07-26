@@ -1,13 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../services/useAuth';
+import { useSchedule } from '../services/useSchedule';
+import { AvailabilityGrid } from '../component/Schedule/AvailabilityGrid';
+import { IRASParseModal } from '../component/Schedule/IRASParseModal';
 import { Button } from '../component/UI/Button';
-import { Building2, User, Shield, LogOut, ShieldAlert, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Building2, User, Shield, LogOut, ShieldAlert, FileText, ArrowRight, Download } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const { slots, toggleSlot, parseIRASText, resetGrid } = useSchedule();
   const location = useLocation();
   const state = location.state as { accessDenied?: boolean; message?: string } | null;
+
+  const [isParseModalOpen, setIsParseModalOpen] = useState<boolean>(false);
+
+  const handleExportPNG = () => {
+    alert('Schedule PNG export utility will generate visual grid snapshot.');
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
@@ -44,7 +54,7 @@ export const Dashboard: React.FC = () => {
       {/* Main Content Area */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full space-y-6">
 
-        {/* Access Denied Warning Toast Banner */}
+        {/* Access Denied Warning Banner */}
         {state?.accessDenied && (
           <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-start gap-3 shadow-xs">
             <ShieldAlert className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
@@ -55,7 +65,7 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Profile Card */}
+        {/* Profile & Control Toolbar */}
         <div className="card-enterprise p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -70,54 +80,61 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className="px-3 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5 text-blue-600" />
-                Role: <strong>{user?.role}</strong>
-              </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="primary"
+                onClick={() => setIsParseModalOpen(true)}
+                className="!py-2 !px-3 text-xs gap-1.5"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Parse IRAS Timetable</span>
+              </Button>
+
+              <Button
+                variant="secondary"
+                onClick={handleExportPNG}
+                className="!py-2 !px-3 text-xs gap-1.5"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export PNG</span>
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Weekly Availability Grid Component */}
+        <AvailabilityGrid
+          slots={slots}
+          onToggleSlot={toggleSlot}
+          onResetGrid={resetGrid}
+        />
 
-          {/* Test RBAC Guard Card */}
-          <div className="card-enterprise p-6 space-y-3 text-left">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900">RBAC Security Guard</h3>
-              <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold text-[10px]">Active</span>
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Test frontend route permission enforcement by attempting to open the restricted billing portal.
-            </p>
-            <div className="pt-2">
-              <Link to="/admin/billing">
-                <Button variant="secondary" className="!py-2 !px-3 text-xs gap-2">
-                  <span>Open /admin/billing</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </Link>
+        {/* Admin Navigation Quick Link */}
+        <div className="card-enterprise p-5 flex items-center justify-between">
+          <div className="flex items-center gap-3 text-left">
+            <Shield className="w-4 h-4 text-blue-600" />
+            <div>
+              <h4 className="text-xs font-bold text-slate-900">Restricted Route Test</h4>
+              <p className="text-[11px] text-slate-500">Test RBAC guard permission checks on restricted admin routes</p>
             </div>
           </div>
 
-          {/* System Status Card */}
-          <div className="card-enterprise p-6 space-y-3 text-left">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900">Sprint 1 Verification</h3>
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              User registration and authentication endpoints are connected with bearer token persistence.
-            </p>
-            <div className="text-[11px] text-slate-500 font-medium pt-1">
-              Ready for Sprint 2 IRAS Parser Integration
-            </div>
-          </div>
-
+          <Link to="/admin/billing">
+            <Button variant="outline" className="!py-1.5 !px-3 text-xs gap-1.5">
+              <span>/admin/billing</span>
+              <ArrowRight className="w-3 h-3" />
+            </Button>
+          </Link>
         </div>
 
       </main>
+
+      {/* IRAS Parse Modal */}
+      <IRASParseModal
+        isOpen={isParseModalOpen}
+        onClose={() => setIsParseModalOpen(false)}
+        onParse={parseIRASText}
+      />
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
