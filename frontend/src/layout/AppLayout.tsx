@@ -40,13 +40,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       label: 'My Assigned Duties',
       path: '/my-duties',
       icon: CalendarDays,
-      roles: ['Student', 'Faculty', 'LabManager', 'DeptManager'],
+      roles: ['Student'],
     },
     {
       label: 'Shift Swap Portal',
       path: '/swaps',
       icon: ArrowRightLeft,
-      roles: ['Student', 'Faculty', 'LabManager', 'DeptManager'],
+      roles: ['Student'],
     },
     {
       label: 'Faculty Supervision',
@@ -64,7 +64,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       label: 'Student Calendars',
       path: '/manager/student-calendars',
       icon: CalendarSearch,
-      roles: ['LabManager', 'DeptManager'],
+      roles: ['LabManager', 'DeptManager', 'Faculty'],
+    },
+    {
+      label: 'User Administration',
+      path: '/admin/users',
+      icon: UserCheck,
+      roles: ['DeptManager'],
     },
     {
       label: 'Billing & Payroll',

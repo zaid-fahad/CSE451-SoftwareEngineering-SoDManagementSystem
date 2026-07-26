@@ -11,6 +11,7 @@ import { SwapPortal } from './pages/SwapPortal';
 import { StudentDutiesPage } from './pages/StudentDutiesPage';
 import { FacultyPortal } from './pages/FacultyPortal';
 import { StudentCalendarInspector } from './pages/StudentCalendarInspector';
+import { UserManagementPage } from './pages/UserManagementPage';
 import { ProtectedRoute } from './component/Auth/ProtectedRoute';
 
 export const App: React.FC = () => {
@@ -36,7 +37,7 @@ export const App: React.FC = () => {
           <Route
             path="/my-duties"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['Student']}>
                 <AppLayout>
                   <StudentDutiesPage />
                 </AppLayout>
@@ -46,7 +47,7 @@ export const App: React.FC = () => {
           <Route
             path="/swaps"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute allowedRoles={['Student']}>
                 <AppLayout>
                   <SwapPortal />
                 </AppLayout>
@@ -76,9 +77,19 @@ export const App: React.FC = () => {
           <Route
             path="/manager/student-calendars"
             element={
-              <ProtectedRoute allowedRoles={['LabManager', 'DeptManager']}>
+              <ProtectedRoute allowedRoles={['LabManager', 'DeptManager', 'Faculty']}>
                 <AppLayout>
                   <StudentCalendarInspector />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute allowedRoles={['DeptManager']}>
+                <AppLayout>
+                  <UserManagementPage />
                 </AppLayout>
               </ProtectedRoute>
             }
