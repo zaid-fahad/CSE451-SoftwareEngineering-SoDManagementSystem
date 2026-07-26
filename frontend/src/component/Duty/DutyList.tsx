@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DutySlot } from '../../model/duty';
-import { MapPin, Clock, Users, UserPlus, Trash2, CheckCircle2, GraduationCap, Search } from 'lucide-react';
+import { MapPin, Clock, Users, UserPlus, Trash2, CheckCircle2, GraduationCap, Search, LayoutGrid, Table } from 'lucide-react';
 import { Button } from '../UI/Button';
 
 interface DutyListProps {
@@ -18,6 +18,7 @@ export const DutyList: React.FC<DutyListProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('All');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedDutyIds, setSelectedDutyIds] = useState<string[]>([]);
 
   // Filter duties by search query and type filter
@@ -99,16 +100,40 @@ export const DutyList: React.FC<DutyListProps> = ({
           ))}
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search duty title, room, day or student..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white text-slate-900 text-xs rounded-md py-2 pl-9 pr-3 border border-slate-300 focus:border-blue-600 outline-none"
-          />
+        <div className="flex items-center gap-3">
+          {/* View Mode Toggle Switcher */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-md border border-slate-200 text-xs">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`px-2.5 py-1 rounded font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Grid</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-2.5 py-1 rounded font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+                viewMode === 'table' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Table className="w-3.5 h-3.5" />
+              <span>Table</span>
+            </button>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search duty, room or student..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white text-slate-900 text-xs rounded-md py-2 pl-9 pr-3 border border-slate-300 focus:border-blue-600 outline-none"
+            />
+          </div>
         </div>
       </div>
 
@@ -135,12 +160,13 @@ export const DutyList: React.FC<DutyListProps> = ({
           <p className="text-sm font-medium">No matching duty slots found.</p>
           <p className="text-xs">Try adjusting your search query or filter settings.</p>
         </div>
-      ) : (
-        /* Duty Slots Cards Grid with Selection Checkboxes */
+      ) : viewMode === 'grid' ? (
+        /* Grid Cards View */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredDuties.map((duty) => {
             const isFull = duty.assignedStudents.length >= duty.maxStudents;
             const isSelected = selectedDutyIds.includes(duty.id);
+            const fillPct = Math.round((duty.assignedStudents.length / duty.maxStudents) * 100);
 
             return (
               <div
@@ -194,15 +220,26 @@ export const DutyList: React.FC<DutyListProps> = ({
                   )}
                 </div>
 
+                {/* Capacity Progress Bar */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500 font-medium">Capacity Completion:</span>
+                    <span className="font-bold text-slate-800 font-mono">{duty.assignedStudents.length}/{duty.maxStudents} ({fillPct}%)</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className={`h-1.5 rounded-full ${isFull ? 'bg-emerald-600' : fillPct > 0 ? 'bg-blue-600' : 'bg-slate-300'}`}
+                      style={{ width: `${fillPct}%` }}
+                    ></div>
+                  </div>
+                </div>
+
                 {/* Assigned Students Section */}
                 <div className="space-y-2 pt-3 border-t border-slate-100">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-slate-700 flex items-center gap-1">
                       <Users className="w-3.5 h-3.5 text-blue-600" />
                       <span>Assigned Students</span>
-                    </span>
-                    <span className={`font-mono text-[11px] font-bold ${isFull ? 'text-emerald-700' : 'text-slate-500'}`}>
-                      {duty.assignedStudents.length} / {duty.maxStudents}
                     </span>
                   </div>
 
@@ -248,6 +285,103 @@ export const DutyList: React.FC<DutyListProps> = ({
               </div>
             );
           })}
+        </div>
+      ) : (
+        /* Enterprise Table View */
+        <div className="card-enterprise p-5">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse min-w-[750px]">
+              <thead>
+                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
+                  <th className="p-3 border-r border-slate-200 w-10 text-center">Select</th>
+                  <th className="p-3 border-r border-slate-200">Duty Slot Title</th>
+                  <th className="p-3 border-r border-slate-200">Type & Room</th>
+                  <th className="p-3 border-r border-slate-200">Day & Time Window</th>
+                  <th className="p-3 border-r border-slate-200 text-center">Assigned Students</th>
+                  <th className="p-3 border-r border-slate-200">Supervising Faculty</th>
+                  <th className="p-3 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDuties.map((duty) => {
+                  const isSelected = selectedDutyIds.includes(duty.id);
+                  const isFull = duty.assignedStudents.length >= duty.maxStudents;
+
+                  return (
+                    <tr key={duty.id} className="border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition-colors">
+                      <td className="p-3 border-r border-slate-200 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(duty.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      </td>
+
+                      <td className="p-3 border-r border-slate-200 font-bold text-slate-900 text-sm">
+                        {duty.title}
+                      </td>
+
+                      <td className="p-3 border-r border-slate-200 space-y-1">
+                        <span className={`px-2 py-0.5 rounded border text-[10px] font-bold block w-fit uppercase ${getBadgeStyle(duty.type)}`}>
+                          {duty.type === 'LabDuty' ? 'Lab Duty' : duty.type === 'ExamDuty' ? 'Exam Duty' : 'General Duty'}
+                        </span>
+                        <div className="text-[11px] font-medium text-slate-600 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-400" />
+                          <span>{duty.location}</span>
+                        </div>
+                      </td>
+
+                      <td className="p-3 border-r border-slate-200 font-medium text-slate-700">
+                        <div className="font-bold text-slate-900">{duty.day}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">{duty.startTime} - {duty.endTime}</div>
+                      </td>
+
+                      <td className="p-3 border-r border-slate-200 text-center">
+                        <span className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] ${isFull ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-blue-50 text-blue-800 border border-blue-200'}`}>
+                          {duty.assignedStudents.length} / {duty.maxStudents}
+                        </span>
+                        <div className="text-[10px] text-slate-500 mt-1 truncate max-w-[150px]">
+                          {duty.assignedStudents.map((s) => s.name).join(', ') || 'None'}
+                        </div>
+                      </td>
+
+                      <td className="p-3 border-r border-slate-200 text-slate-700">
+                        {duty.assignedFaculty ? (
+                          <span className="text-purple-800 font-medium text-[11px] flex items-center gap-1">
+                            <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
+                            {duty.assignedFaculty}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[11px]">Unassigned</span>
+                        )}
+                      </td>
+
+                      <td className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => onOpenAssignModal(duty)}
+                            disabled={isFull}
+                            className="!py-1 !px-2 text-xs"
+                          >
+                            <span>Assign</span>
+                          </Button>
+                          <button
+                            onClick={() => onDeleteDuty(duty.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 transition-colors rounded cursor-pointer"
+                            title="Delete Duty Slot"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

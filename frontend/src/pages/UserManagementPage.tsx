@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { useUserManagement, AddUserPayload } from '../services/useUserManagement';
+import { useUserManagement, AddUserPayload, UpdateUserPayload } from '../services/useUserManagement';
 import { AddUserModal } from '../component/User/AddUserModal';
+import { EditUserModal } from '../component/User/EditUserModal';
 import { Button } from '../component/UI/Button';
-import { Users, UserPlus, Search, CheckCircle2, ShieldCheck, Power, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Search, CheckCircle2, ShieldCheck, Power, Trash2, Edit } from 'lucide-react';
+import { User } from '../model/user';
 
 export const UserManagementPage: React.FC = () => {
-  const { users, addUser, toggleUserStatus, deleteUser } = useUserManagement();
+  const { users, addUser, updateUser, toggleUserStatus, deleteUser } = useUserManagement();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const filteredUsers = users.filter((u) => {
@@ -28,6 +31,12 @@ export const UserManagementPage: React.FC = () => {
   const handleAddUser = async (payload: AddUserPayload) => {
     await addUser(payload);
     setToastMsg(`User profile for ${payload.name} created successfully!`);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const handleUpdateUser = (userId: string, payload: UpdateUserPayload) => {
+    updateUser(userId, payload);
+    setToastMsg(`User profile for ${payload.name} updated successfully!`);
     setTimeout(() => setToastMsg(null), 3500);
   };
 
@@ -63,7 +72,7 @@ export const UserManagementPage: React.FC = () => {
             <span>Department User Administration</span>
           </h1>
           <p className="text-xs text-slate-500">
-            Create new department users, manage roles, and activate or deactivate user accounts.
+            Create new department users, edit user roles/profiles, and activate or deactivate user accounts.
           </p>
         </div>
 
@@ -167,8 +176,17 @@ export const UserManagementPage: React.FC = () => {
                     <td className="p-3 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
+                          onClick={() => setEditingUser(u)}
+                          className="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                          title="Edit User Profile"
+                        >
+                          <Edit className="w-3 h-3 text-blue-600" />
+                          <span>Edit</span>
+                        </button>
+
+                        <button
                           onClick={() => handleToggleStatus(u.id, u.name, isActive)}
-                          className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
+                          className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
                             isActive
                               ? 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100'
                               : 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
@@ -196,11 +214,18 @@ export const UserManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Add User Modal */}
+      {/* Modals */}
       <AddUserModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddUser={handleAddUser}
+      />
+
+      <EditUserModal
+        isOpen={!!editingUser}
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+        onUpdateUser={handleUpdateUser}
       />
     </div>
   );
