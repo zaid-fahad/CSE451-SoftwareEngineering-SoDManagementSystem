@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Calendar, MapPin, Users, Tag, AlertCircle } from 'lucide-react';
+import { X, Calendar, MapPin, Users, Tag, AlertCircle, UserPlus } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Input } from '../UI/Input';
 import { DutyCreateRequest } from '../../model/duty';
 import { DAYS, HOURS } from '../../services/useSchedule';
+import { MOCK_STUDENTS } from '../../services/useDuties';
 
 interface CreateDutyModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
     endTime: '11:00 AM',
     type: 'LabDuty',
     maxStudents: 2,
+    assignedStudentId: '',
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,7 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
         endTime: '11:00 AM',
         type: 'LabDuty',
         maxStudents: 2,
+        assignedStudentId: '',
       });
     } catch {
       setError('Failed to create duty slot.');
@@ -186,16 +189,43 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
-          <Input
-            label="Max Students Needed"
-            type="number"
-            min={1}
-            max={10}
-            name="maxStudents"
-            icon={Users}
-            value={formData.maxStudents}
-            onChange={handleChange}
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <Input
+              label="Max Students Needed"
+              type="number"
+              min={1}
+              max={10}
+              name="maxStudents"
+              icon={Users}
+              value={formData.maxStudents}
+              onChange={handleChange}
+            />
+
+            <div className="flex flex-col space-y-1.5 w-full text-left">
+              <label htmlFor="assignedStudentId" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Initial Student (Optional)
+              </label>
+              <div className="relative flex items-center">
+                <div className="absolute left-3 text-slate-400 pointer-events-none">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <select
+                  id="assignedStudentId"
+                  name="assignedStudentId"
+                  value={formData.assignedStudentId}
+                  onChange={handleChange}
+                  className="w-full bg-white text-slate-900 text-xs rounded-md py-2.5 pl-9 pr-3 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none cursor-pointer"
+                >
+                  <option value="">None (Assign later)</option>
+                  {MOCK_STUDENTS.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.name} ({st.department_id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={onClose} className="!py-2 !px-3 text-xs">
