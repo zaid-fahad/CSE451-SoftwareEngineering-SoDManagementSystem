@@ -46,7 +46,8 @@ const INITIAL_DUTIES: DutySlot[] = [
     endTime: '12:00 PM',
     type: 'LabDuty',
     maxStudents: 2,
-    assignedStudents: [MOCK_STUDENTS[1]],
+    assignedStudents: [MOCK_STUDENTS[0]], // Alice Smith
+    assignedFaculty: 'Dr. Sarah Connor (Faculty)',
   },
   {
     id: 'duty-2',
@@ -57,7 +58,8 @@ const INITIAL_DUTIES: DutySlot[] = [
     endTime: '04:00 PM',
     type: 'ExamDuty',
     maxStudents: 3,
-    assignedStudents: [MOCK_STUDENTS[0]],
+    assignedStudents: [MOCK_STUDENTS[1]], // Bob Johnson
+    assignedFaculty: 'Prof. Alan Turing (Faculty)',
   },
   {
     id: 'duty-3',
@@ -68,7 +70,8 @@ const INITIAL_DUTIES: DutySlot[] = [
     endTime: '12:00 PM',
     type: 'GeneralDuty',
     maxStudents: 2,
-    assignedStudents: [],
+    assignedStudents: [MOCK_STUDENTS[2]], // Charlie Brown
+    assignedFaculty: 'Dr. Sarah Connor (Faculty)',
   },
 ];
 
@@ -134,6 +137,7 @@ export const useDuties = () => {
           type: data.type,
           maxStudents: data.maxStudents,
           assignedStudents: initialAssigned,
+          assignedFaculty: data.assignedFaculty || 'Dr. Sarah Connor (Faculty)',
         };
         setDuties((prev) => [newDuty, ...prev]);
         return newDuty;
