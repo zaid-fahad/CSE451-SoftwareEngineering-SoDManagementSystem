@@ -27,7 +27,7 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
   };
 
   return (
-    <div className="space-y-4 text-left">
+    <div id="availability-grid-container" className="space-y-4 text-left p-1 bg-white rounded-lg">
       {/* Grid Summary Header */}
       <div className="card-enterprise p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
