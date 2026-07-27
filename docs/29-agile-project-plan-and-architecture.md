@@ -35,18 +35,18 @@ The application is built using a decoupled **Client-Server MVC Pattern**.
 
 ```mermaid
 graph LR
-    subgraph Frontend: React TS, CSS, Vite
-        A[Components & Pages] --> B[Custom React Hooks]
+    subgraph Frontend ["Frontend: React TS, CSS, Vite"]
+        A[Components and Pages] --> B[Custom React Hooks]
         B --> C[Axios API Client]
     end
 
-    subgraph Backend: FastAPI
+    subgraph Backend ["Backend: FastAPI"]
         C -->|HTTP REST| D[Router Controllers]
-        D --> E[Conflict & Parser Services]
+        D --> E[Conflict and Parser Services]
         D --> F[SQLAlchemy Models]
     end
 
-    subgraph Database Layer
+    subgraph Database ["Database Layer"]
         F -->|Async Queries| G[(SQLite File DB)]
     end
 ```
@@ -121,13 +121,13 @@ erDiagram
         string created_at
     }
 
-    USERS ||--o{ SCHEDULES : "has"
-    USERS ||--o{ DUTIES : "assigned"
-    DUTIES ||--o{ SWAPS : "traded"
-    USERS ||--o{ SWAPS : "requests"
-    USERS ||--o{ SWAPS : "accepts"
-    USERS ||--o{ NOTIFICATIONS : "receives"
-    USERS ||--o{ BILLING_CLAIMS : "submits"
+    USERS ||--o{ SCHEDULES : has
+    USERS ||--o{ DUTIES : assigned
+    DUTIES ||--o{ SWAPS : traded
+    USERS ||--o{ SWAPS : requests
+    USERS ||--o{ SWAPS : accepts
+    USERS ||--o{ NOTIFICATIONS : receives
+    USERS ||--o{ BILLING_CLAIMS : submits
 ```
 
 ---
@@ -139,22 +139,22 @@ The broadcast matching engine automatically filters out conflicted student peers
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Student A as Requester (Student A)
+    actor A as Student A
     participant API as FastAPI Router
     participant DB as SQLite Database
-    actor Student B as Eligible Peer (Student B)
-    actor Student C as Conflicted Peer (Student C)
+    actor B as Student B
+    actor C as Student C
 
-    Student A->>API: POST /api/v1/swaps/request (Duty ID, Reason)
+    A->>API: POST /api/v1/swaps/request (Duty ID, Reason)
     API->>DB: Query original duty times and active students list
     DB-->>API: Return duty details
-    API->>API: Filter candidate availability:
+    API->>API: Filter candidate availability
     Note over API: 1. Student has no class at duty time?<br/>2. Student has no override at duty time?<br/>3. Student has no overlapping duty?
     API->>DB: Send Broadcast Notification to Student B (No conflict)
     API->>DB: Skip Student C (Has class conflict)
-    DB-->>Student B: Notification badge count updates
-    Student B->>API: POST /api/v1/swaps/{id}/respond?approve=true
+    DB-->>B: Notification badge count updates
+    B->>API: POST /api/v1/swaps/{id}/respond?approve=true
     API->>DB: Update Duty assigned student to Student B
     API->>DB: Update Swap status to Accepted
-    API->>Student A: Send verification notification swap accepted
+    API->>A: Send verification notification swap accepted
 ```
