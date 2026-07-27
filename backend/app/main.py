@@ -5,6 +5,7 @@ from app.database import Base, engine
 from app.router.auth import router as auth_router
 from app.router.schedule import router as schedule_router
 from app.router.duty import router as duty_router
+from app.router.swap import router as swap_router, notif_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,6 +34,8 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(schedule_router, prefix="/api/v1")
 app.include_router(duty_router, prefix="/api/v1")
+app.include_router(swap_router, prefix="/api/v1")
+app.include_router(notif_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
