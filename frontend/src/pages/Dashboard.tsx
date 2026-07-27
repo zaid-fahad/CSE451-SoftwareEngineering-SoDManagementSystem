@@ -17,7 +17,7 @@ import { CheckCircle2 } from 'lucide-react';
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { slots, toggleSlot, parseIRASText, loadDemoData, resetGrid } = useSchedule();
-  const { duties, createDuty } = useDuties();
+  const { duties, students, createDuty } = useDuties();
   const { submitBill } = useBilling();
 
   const [isParseModalOpen, setIsParseModalOpen] = useState<boolean>(false);
@@ -103,6 +103,7 @@ export const Dashboard: React.FC = () => {
 
       <CreateDutyModal
         isOpen={isCreateDutyModalOpen}
+        students={students}
         onClose={() => setIsCreateDutyModalOpen(false)}
         onCreate={createDuty}
       />

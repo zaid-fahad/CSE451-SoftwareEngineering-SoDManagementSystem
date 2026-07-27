@@ -1,56 +1,85 @@
-import React, { useState } from 'react';
-import { X, UserPlus, Check, AlertCircle, ShieldAlert } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, UserPlus, Check, AlertCircle, ShieldAlert, Loader2 } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { DutySlot, ScheduleConflict } from '../../model/duty';
 import { User } from '../../model/user';
 import { DayOfWeek } from '../../model/schedule';
-import { MOCK_STUDENTS } from '../../services/useDuties';
 
 interface AssignStudentModalProps {
   isOpen: boolean;
   duty: DutySlot | null;
+  students: User[];
   onClose: () => void;
-  onAssign: (dutyId: string, student: User) => boolean;
-  checkStudentConflict: (studentId: string, day: DayOfWeek, startTime: string) => ScheduleConflict;
+  onAssign: (dutyId: string, student: User) => Promise<boolean>;
+  checkStudentConflict: (studentId: string, day: DayOfWeek, startTime: string, endTime: string) => Promise<ScheduleConflict>;
 }
 
 export const AssignStudentModal: React.FC<AssignStudentModalProps> = ({
   isOpen,
   duty,
+  students,
   onClose,
   onAssign,
   checkStudentConflict,
 }) => {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [conflicts, setConflicts] = useState<Record<string, ScheduleConflict>>({});
+  const [isCheckingConflicts, setIsCheckingConflicts] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Background check all students availability on modal open / duty change
+  useEffect(() => {
+    if (!isOpen || !duty || !students.length) return;
+
+    const runChecks = async () => {
+      setIsCheckingConflicts(true);
+      const cachedConflicts: Record<string, ScheduleConflict> = {};
+      for (const student of students) {
+        const res = await checkStudentConflict(student.id, duty.day, duty.startTime, duty.endTime);
+        cachedConflicts[student.id] = res;
+      }
+      setConflicts(cachedConflicts);
+      setIsCheckingConflicts(false);
+    };
+
+    runChecks();
+  }, [isOpen, duty, students, checkStudentConflict]);
 
   if (!isOpen || !duty) return null;
 
   const isFull = duty.assignedStudents.length >= duty.maxStudents;
 
-  const handleAssign = () => {
+  const handleAssign = async () => {
     setError(null);
     if (!selectedStudentId) {
       setError('Please select an available student from the list.');
       return;
     }
 
-    const studentToAssign = MOCK_STUDENTS.find((s) => s.id === selectedStudentId);
+    const studentToAssign = students.find((s) => s.id === selectedStudentId);
     if (!studentToAssign) return;
 
-    // Check conflict guard
-    const conflict = checkStudentConflict(studentToAssign.id, duty.day, duty.startTime);
-    if (conflict.hasConflict) {
+    // Check cached conflicts
+    const conflict = conflicts[studentToAssign.id];
+    if (conflict && conflict.hasConflict) {
       setError(`Cannot assign student: ${conflict.reason}`);
       return;
     }
 
-    const success = onAssign(duty.id, studentToAssign);
-    if (success) {
-      onClose();
-      setSelectedStudentId('');
-    } else {
-      setError('Student assignment failed. Slot may be full or student already assigned.');
+    setIsSubmitting(true);
+    try {
+      const success = await onAssign(duty.id, studentToAssign);
+      if (success) {
+        onClose();
+        setSelectedStudentId('');
+      } else {
+        setError('Student assignment failed. Slot may be full or already assigned.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Student assignment failed.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -64,7 +93,7 @@ export const AssignStudentModal: React.FC<AssignStudentModalProps> = ({
             <UserPlus className="w-5 h-5 text-blue-600" />
             <div>
               <h3 className="text-sm font-bold text-slate-900">Assign Student to Duty</h3>
-              <p className="text-[11px] text-slate-500">{duty.title} ({duty.day} {duty.startTime})</p>
+              <p className="text-[11px] text-slate-500">{duty.title} ({duty.day} {duty.startTime}-{duty.endTime})</p>
             </div>
           </div>
           <button
@@ -94,25 +123,32 @@ export const AssignStudentModal: React.FC<AssignStudentModalProps> = ({
                 <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">
                   Select Available Student
                 </label>
-                <span className="text-[10px] text-slate-500 font-medium">
-                  Real-time Schedule Conflict Check Active
-                </span>
+                {isCheckingConflicts ? (
+                  <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Checking database schedules...
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-emerald-600 font-semibold">
+                    Conflict checker synced
+                  </span>
+                )}
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {MOCK_STUDENTS.map((student) => {
-                  const isAssigned = duty.assignedStudents.some((s) => s.id === student.id);
-                  const conflict = checkStudentConflict(student.id, duty.day, duty.startTime);
+                {students.map((student) => {
+                  const isAssigned = duty.assignedStudents.some((s) => String(s.id) === String(student.id));
+                  const conflict = conflicts[student.id];
                   const isSelected = selectedStudentId === student.id;
 
                   return (
                     <div
                       key={student.id}
-                      onClick={() => !isAssigned && !conflict.hasConflict && setSelectedStudentId(student.id)}
+                      onClick={() => !isAssigned && (!conflict || !conflict.hasConflict) && setSelectedStudentId(student.id)}
                       className={`p-3 rounded-lg border text-xs transition-all ${
                         isAssigned
                           ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                          : conflict.hasConflict
+                          : conflict?.hasConflict
                           ? 'bg-rose-50/70 border-rose-200 text-rose-900 cursor-not-allowed opacity-90'
                           : isSelected
                           ? 'bg-blue-50 border-blue-500 text-blue-900 cursor-pointer shadow-xs'
@@ -127,18 +163,18 @@ export const AssignStudentModal: React.FC<AssignStudentModalProps> = ({
 
                         {isAssigned ? (
                           <span className="text-[10px] font-semibold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">Assigned</span>
-                        ) : conflict.hasConflict ? (
+                        ) : conflict?.hasConflict ? (
                           <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-700 font-bold text-[10px] flex items-center gap-1">
                             <ShieldAlert className="w-3 h-3 text-rose-600" />
-                            <span>Conflict: {conflict.type === 'Class' ? `Class ${conflict.conflictingCourse}` : 'Busy Override'}</span>
+                            <span>Conflict: {conflict.type === 'Class' ? `Class ${conflict.conflictingCourse}` : 'Busy'}</span>
                           </span>
                         ) : isSelected ? (
                           <Check className="w-4 h-4 text-blue-600 mt-1" />
                         ) : null}
                       </div>
 
-                      {conflict.hasConflict && (
-                        <div className="mt-1.5 pt-1.5 border-t border-rose-200/60 text-[11px] text-rose-600 font-medium">
+                      {conflict?.hasConflict && (
+                        <div className="mt-1.5 pt-1.5 border-t border-rose-200/60 text-[11px] text-rose-600 font-semibold">
                           {conflict.reason}
                         </div>
                       )}
@@ -155,7 +191,8 @@ export const AssignStudentModal: React.FC<AssignStudentModalProps> = ({
             </Button>
             <Button
               onClick={handleAssign}
-              disabled={isFull || !selectedStudentId}
+              disabled={isFull || !selectedStudentId || isCheckingConflicts || isSubmitting}
+              isLoading={isSubmitting}
               className="!py-2 !px-4 text-xs"
             >
               Assign Selected Student
