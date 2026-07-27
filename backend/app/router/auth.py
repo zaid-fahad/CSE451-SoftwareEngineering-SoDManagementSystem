@@ -67,3 +67,9 @@ from typing import List
 async def list_students(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.role == "Student"))
     return result.scalars().all()
+
+from app.services.security import get_current_user
+
+@router.get("/me", response_model=UserResponse)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
