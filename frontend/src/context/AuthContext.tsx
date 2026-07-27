@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import { User, UserRole, RegisterRequest, LoginRequest, AuthResponse } from '../model/user';
+import { User, UserRole, RegisterRequest, LoginRequest } from '../model/user';
 import { api } from '../services/api';
 
 interface AuthContextType {
@@ -13,20 +13,12 @@ interface AuthContextType {
   switchRole: (role: UserRole) => void;
 }
 
-const DEFAULT_DEMO_USER: User = {
-  id: 'st-demo-101',
-  department_id: '2021-1-60-001',
-  name: 'Alice Smith',
-  email: 'alice.smith@univ.edu',
-  role: 'Student',
-};
-
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(DEFAULT_DEMO_USER);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('sod_token') || 'demo-token');
-  const [isLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('sod_token'));
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -35,58 +27,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const res = await api.get<User>('/auth/me');
           setUser(res.data);
+          setToken(storedToken);
         } catch {
-          // Keep demo user if backend offline
+          // Token expired or invalid
+          localStorage.removeItem('sod_token');
+          setToken(null);
+          setUser(null);
         }
+      } else {
+        setToken(null);
+        setUser(null);
       }
+      setIsLoading(false);
     };
     initAuth();
   }, []);
 
   const register = async (data: RegisterRequest) => {
     try {
-      const res = await api.post<AuthResponse>('/auth/register', data);
-      const { access_token, user: registeredUser } = res.data;
+      const regRes = await api.post<User>('/auth/register', data);
+      
+      // Auto login after successful registration
+      const loginRes = await api.post<{ access_token: string; token_type: string }>('/auth/login', {
+        email: data.email,
+        password: data.password,
+      });
+
+      const { access_token } = loginRes.data;
       localStorage.setItem('sod_token', access_token);
       setToken(access_token);
-      setUser(registeredUser);
-    } catch {
-      // Mock registration fallback for offline preview
-      const newUser: User = {
-        id: `st-${Date.now()}`,
-        department_id: data.department_id,
-        name: data.name,
-        email: data.email,
-        role: data.role || 'Student',
-      };
-      setToken('demo-token');
-      setUser(newUser);
+      setUser(regRes.data);
+    } catch (err: any) {
+      throw err;
     }
   };
 
   const login = async (data: LoginRequest) => {
     try {
-      const res = await api.post<AuthResponse>('/auth/login', data);
-      const { access_token, user: loggedInUser } = res.data;
+      const res = await api.post<{ access_token: string; token_type: string }>('/auth/login', data);
+      const { access_token } = res.data;
       localStorage.setItem('sod_token', access_token);
       setToken(access_token);
-      setUser(loggedInUser);
-    } catch {
-      // Mock login fallback for offline preview
-      const loggedUser: User = {
-        id: 'st-demo-101',
-        department_id: '2021-1-60-001',
-        name: data.email.split('@')[0].replace('.', ' '),
-        email: data.email,
-        role: 'Student',
-      };
-      setToken('demo-token');
-      setUser(loggedUser);
+
+      // Fetch user profile info
+      const userRes = await api.get<User>('/auth/me');
+      setUser(userRes.data);
+    } catch (err: any) {
+      throw err;
     }
   };
 
   const switchRole = (role: UserRole) => {
-    setUser((prev) => (prev ? { ...prev, role } : { ...DEFAULT_DEMO_USER, role }));
+    setUser((prev) => (prev ? { ...prev, role } : null));
   };
 
   const logout = () => {
