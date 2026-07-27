@@ -1,7 +1,7 @@
 # SoD Enterprise Management System
 
 ## Academic Timetables, Duty Assignments, and Shift Swaps
-### ADecoupled FastAPI + React TS Application
+### A Decoupled FastAPI + React TS Application
 
 ---
 
@@ -16,28 +16,22 @@
 
 ## 2. Decoupled MVC System Architecture
 
-```
-                 +--------------------------------------------+
-                 |       React TS Frontend (Vite + CSS)       |
-                 |  [Dashboard, Grids, Modals, Swaps, Bills]  |
-                 +----------------------+---------------------+
-                                        | Axios
-                                        v HTTP REST
-                 +----------------------+---------------------+
-                 |       FastAPI Router Controllers           |
-                 |    [Auth, Schedules, Duties, Swaps, Bills] |
-                 +----------------------+---------------------+
-                                        | Business Services
-                                        v (Regex, Overlaps)
-                 +----------------------+---------------------+
-                 |      SQLAlchemy Database Models            |
-                 |    [User, Schedule, Duty, Swap, Bill]      |
-                 +----------------------+---------------------+
-                                        | Async Query
-                                        v
-                 +----------------------+---------------------+
-                 |         SQLite DB (sod_db.db)              |
-                 +--------------------------------------------+
+```mermaid
+graph TD
+    subgraph Frontend ["React TS Frontend"]
+        UI[Components & Pages] --> Hooks[Custom React Hooks]
+        Hooks --> Client[Axios API Client]
+    end
+
+    subgraph Backend ["FastAPI Backend Services"]
+        Client -->|HTTP REST| Router[Router Controllers]
+        Router --> Engines[Conflict & Parser Services]
+        Router --> Models[SQLAlchemy Models]
+    end
+
+    subgraph Database ["Database Layer"]
+        Models -->|Async Query| DB[(SQLite File DB)]
+    end
 ```
 
 ---
@@ -80,8 +74,23 @@
 * **Broadcast Candidate Filters:** The backend matches and notifies only students free of class overlaps, overrides, or other duties during that shift.
 * **Automated Reassignments:** Upon acceptance, the system swaps ownership and logs alerts to the original requester.
 
-```
- [Student A (Busy)] -> POST Request -> API (Filters free peers) -> Inbox Alert -> [Student B (Free)]
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Student A
+    participant API as FastAPI Router
+    participant DB as SQLite Database
+    actor B as Student B
+
+    A->>API: POST /api/v1/swaps/request
+    API->>DB: Query duty times & filter free candidates
+    DB-->>API: Student B is eligible (Student C has class)
+    API->>DB: Insert inbox notification for Student B
+    DB-->>B: Notification badge count updates
+    B->>API: POST /api/v1/swaps/{id}/respond?approve=true
+    API->>DB: Update Duty assigned student to Student B
+    API->>DB: Update Swap status to Accepted
+    API->>A: Send Verification Alert (Accepted)
 ```
 
 ---
