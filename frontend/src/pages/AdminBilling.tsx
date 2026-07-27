@@ -6,7 +6,7 @@ import { FileSpreadsheet, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 export const AdminBilling: React.FC = () => {
   const { user } = useAuth();
-  const { bills, verifyByFaculty, approveByManager, disputeBill } = useBilling();
+  const { bills, verifyByFaculty, approveByManager, disputeBill, exportPayrollCsv } = useBilling();
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -65,6 +65,16 @@ export const AdminBilling: React.FC = () => {
               <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
               <span>Active Role: {user?.role}</span>
             </span>
+
+            {(user?.role === 'Faculty' || user?.role === 'DeptManager') && (
+              <button
+                onClick={exportPayrollCsv}
+                className="px-3.5 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border-0 outline-none"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>Export Payroll CSV</span>
+              </button>
+            )}
           </div>
         </div>
 
