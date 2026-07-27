@@ -4,5 +4,6 @@ from app.model.schedule import Schedule
 from app.model.duty import Duty
 from app.model.swap import Swap
 from app.model.notification import Notification
+from app.model.billing import BillingClaim
 
-__all__ = ["Base", "User", "Schedule", "Duty", "Swap", "Notification"]
+__all__ = ["Base", "User", "Schedule", "Duty", "Swap", "Notification", "BillingClaim"]

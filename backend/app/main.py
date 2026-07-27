@@ -6,6 +6,7 @@ from app.router.auth import router as auth_router
 from app.router.schedule import router as schedule_router
 from app.router.duty import router as duty_router
 from app.router.swap import router as swap_router, notif_router
+from app.router.billing import router as billing_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,6 +37,7 @@ app.include_router(schedule_router, prefix="/api/v1")
 app.include_router(duty_router, prefix="/api/v1")
 app.include_router(swap_router, prefix="/api/v1")
 app.include_router(notif_router, prefix="/api/v1")
+app.include_router(billing_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
