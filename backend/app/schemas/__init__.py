@@ -2,10 +2,12 @@ from app.schemas.user import UserBase, UserCreate, UserLogin, UserResponse, Toke
 from app.schemas.schedule import ScheduleParseRequest, ScheduleBase, ScheduleResponse, ScheduleOverrideRequest
 from app.schemas.duty import DutyCreate, DutyUpdate, DutyResponse
 from app.schemas.swap import SwapRequest, SwapResponse, NotificationResponse
+from app.schemas.billing import BillingClaimCreate, BillingClaimResponse
 
 __all__ = [
     "UserBase", "UserCreate", "UserLogin", "UserResponse", "Token", "TokenData",
     "ScheduleParseRequest", "ScheduleBase", "ScheduleResponse", "ScheduleOverrideRequest",
     "DutyCreate", "DutyUpdate", "DutyResponse",
-    "SwapRequest", "SwapResponse", "NotificationResponse"
+    "SwapRequest", "SwapResponse", "NotificationResponse",
+    "BillingClaimCreate", "BillingClaimResponse"
 ]
