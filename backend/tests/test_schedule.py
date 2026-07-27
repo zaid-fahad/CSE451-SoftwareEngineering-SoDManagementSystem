@@ -172,3 +172,21 @@ async def test_api_override_availability():
         # 4. Check me schedule is empty again
         me_response2 = await ac.get("/api/v1/schedule/me", headers=headers)
         assert len(me_response2.json()) == 0
+
+
+def test_parse_iras_schedule_table_rows():
+    raw_table = """
+Code	Name	Sec	Room	Time	Attendance*	Attendance %	Grade
+CSE204	Digital Logic Design	1	MK5006	ST:11:20-12:50	13 / 26	50 %	Z
+CSE210L	Labwork based on CSE 210	1	CENLAB3	W:09:40-11:10	12 / 24	50 %	W
+    """
+    slots = parse_iras_schedule(raw_table)
+    # CSE204 on ST creates 2 slots (Sunday & Tuesday), CSE210L on W creates 1 slot (Wednesday)
+    assert len(slots) == 3
+    
+    # Assert Sunday slot
+    assert any(s["course_code"] == "CSE204" and s["day_of_week"] == "Sunday" and s["start_time"] == "11:20" for s in slots)
+    # Assert Tuesday slot
+    assert any(s["course_code"] == "CSE204" and s["day_of_week"] == "Tuesday" and s["start_time"] == "11:20" for s in slots)
+    # Assert Wednesday slot
+    assert any(s["course_code"] == "CSE210L" and s["day_of_week"] == "Wednesday" and s["start_time"] == "09:40" for s in slots)
