@@ -60,3 +60,10 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     # Create access token
     access_token = create_access_token(data={"sub": user.email, "role": user.role})
     return {"access_token": access_token, "token_type": "bearer"}
+
+from typing import List
+
+@router.get("/students", response_model=List[UserResponse])
+async def list_students(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.role == "Student"))
+    return result.scalars().all()

@@ -10,7 +10,7 @@ import { DutySlot } from '../model/duty';
 
 export const DutyManager: React.FC = () => {
   const { user } = useAuth();
-  const { duties, createDuty, assignStudent, removeStudent, deleteDuty, checkStudentConflict } = useDuties();
+  const { duties, students, createDuty, assignStudent, removeStudent, deleteDuty, checkStudentConflict } = useDuties();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [assignModalDuty, setAssignModalDuty] = useState<DutySlot | null>(null);
@@ -87,6 +87,7 @@ export const DutyManager: React.FC = () => {
       {/* Modals */}
       <CreateDutyModal
         isOpen={isCreateModalOpen}
+        students={students}
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={createDuty}
       />
@@ -94,6 +95,7 @@ export const DutyManager: React.FC = () => {
       <AssignStudentModal
         isOpen={!!assignModalDuty}
         duty={assignModalDuty}
+        students={students}
         onClose={() => setAssignModalDuty(null)}
         onAssign={assignStudent}
         checkStudentConflict={checkStudentConflict}
