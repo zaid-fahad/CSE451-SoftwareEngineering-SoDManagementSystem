@@ -1,119 +1,169 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { SwapRequest, SwapCreatePayload } from '../model/swap';
 import { User } from '../model/user';
-import { MOCK_STUDENTS } from './useDuties';
+import { DayOfWeek } from '../model/schedule';
 import { api } from './api';
 
-const INITIAL_SWAPS: SwapRequest[] = [
-  {
-    id: 'swap-101',
-    originalDutyId: 'duty-2',
-    dutyTitle: 'Linear Algebra Midterm Invigilation',
-    location: 'Auditorium B',
-    day: 'Wednesday',
-    time: '02:00 PM - 04:00 PM',
-    requestingStudent: MOCK_STUDENTS[1], // Bob Johnson
-    status: 'Pending',
-    createdAt: 'Today at 09:30 AM',
-    reason: 'Have an urgent lab makeup session',
-  },
-  {
-    id: 'swap-102',
-    originalDutyId: 'duty-3',
-    dutyTitle: 'Department Hardware Inventory Duty',
-    location: 'Store Room 104',
-    day: 'Friday',
-    time: '10:00 AM - 12:00 PM',
-    requestingStudent: MOCK_STUDENTS[2], // Charlie Brown
-    status: 'Pending',
-    createdAt: 'Yesterday at 04:15 PM',
-    reason: 'Family appointment conflict',
-  },
-  {
-    id: 'swap-103',
-    originalDutyId: 'duty-1',
-    dutyTitle: 'Software Engineering Lab Assistance',
-    location: 'Lab Room 302',
-    day: 'Monday',
-    time: '09:00 AM - 11:00 AM',
-    requestingStudent: MOCK_STUDENTS[3], // Diana Prince
-    acceptingStudent: MOCK_STUDENTS[0], // Alice Smith
-    status: 'Accepted',
-    createdAt: '2 days ago',
-    reason: 'Schedule swap accepted',
-  },
-];
+// Convert 24-hour time to 12-hour AM/PM time
+const convertTo12h = (time24h: string): string => {
+  const parts = time24h.split(':');
+  let hour = parseInt(parts[0], 10);
+  const minute = parts[1];
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  if (hour > 12) hour -= 12;
+  if (hour === 0) hour = 12;
+  return `${String(hour).padStart(2, '0')}:${minute} ${ampm}`;
+};
+
+// Mapper between backend schemas and frontend interfaces
+const mapBackendSwapToFrontend = (
+  s: any,
+  dutiesList: any[],
+  studentsList: User[]
+): SwapRequest | null => {
+  // Find linked duty
+  const duty = dutiesList.find((d) => String(d.id) === String(s.duty_id));
+  if (!duty) return null;
+
+  // Find requester student
+  const requester = studentsList.find((stud) => String(stud.id) === String(s.requester_id));
+  if (!requester) return null;
+
+  // Find target/accepting student
+  const accepting = studentsList.find((stud) => String(stud.id) === String(s.target_student_id));
+
+  let status: any = 'Pending';
+  if (s.status === 'Accepted') status = 'Accepted';
+  if (s.status === 'Rejected') status = 'Cancelled';
+
+  // Map notes/location
+  let location = 'Lab Room 302';
+  if (duty.notes) {
+    try {
+      const parsedNotes = JSON.parse(duty.notes);
+      location = parsedNotes.location || location;
+    } catch {
+      location = duty.notes;
+    }
+  }
+
+  return {
+    id: String(s.id),
+    originalDutyId: String(duty.id),
+    dutyTitle: duty.title,
+    location,
+    day: duty.day_of_week as DayOfWeek,
+    time: `${convertTo12h(duty.start_time)} - ${convertTo12h(duty.end_time)}`,
+    requestingStudent: requester,
+    acceptingStudent: accepting || undefined,
+    status,
+    createdAt: s.created_at,
+    reason: s.reason,
+  };
+};
 
 export const useSwaps = () => {
-  const [swaps, setSwaps] = useState<SwapRequest[]>(INITIAL_SWAPS);
+  const [swaps, setSwaps] = useState<SwapRequest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const requestSwap = useCallback(async (payload: SwapCreatePayload, requestingUser: User): Promise<SwapRequest> => {
+  const refreshSwaps = useCallback(async () => {
     setIsLoading(true);
     try {
-      try {
-        const res = await api.post<SwapRequest>('/swaps', payload);
-        setSwaps((prev) => [res.data, ...prev]);
-        return res.data;
-      } catch {
-        const newSwap: SwapRequest = {
-          id: `swap-${Date.now()}`,
-          originalDutyId: payload.originalDutyId,
-          dutyTitle: payload.dutyTitle,
-          location: payload.location,
-          day: payload.day,
-          time: payload.time,
-          requestingStudent: requestingUser,
-          status: 'Pending',
-          createdAt: 'Just now',
-          reason: payload.reason || 'Shift swap trade requested',
-        };
-        setSwaps((prev) => [newSwap, ...prev]);
-        return newSwap;
-      }
+      // 1. Fetch students
+      const studRes = await api.get('/auth/students');
+      const fetchedStudents = studRes.data.map((s: any) => ({
+        id: String(s.id),
+        department_id: s.department_id,
+        name: s.name,
+        email: s.email,
+        role: s.role,
+      }));
+
+      // 2. Fetch duties
+      const dutyRes = await api.get('/tasks');
+      
+      // 3. Fetch swaps
+      const swapRes = await api.get('/swaps');
+      
+      // 4. Map them together
+      const mapped: SwapRequest[] = [];
+      swapRes.data.forEach((s: any) => {
+        const item = mapBackendSwapToFrontend(s, dutyRes.data, fetchedStudents);
+        if (item) mapped.push(item);
+      });
+
+      setSwaps(mapped);
+    } catch (err) {
+      console.error('Failed to load swaps from backend:', err);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const acceptSwap = useCallback(async (swapId: string, acceptingUser: User): Promise<boolean> => {
-    setIsLoading(true);
-    let success = false;
-    try {
-      try {
-        await api.post(`/swaps/${swapId}/accept`);
-      } catch {
-        // Local state fallback
-      }
-      setSwaps((prev) =>
-        prev.map((s) => {
-          if (s.id === swapId && s.status === 'Pending') {
-            success = true;
-            return {
-              ...s,
-              acceptingStudent: acceptingUser,
-              status: 'Accepted',
-            };
-          }
-          return s;
-        })
-      );
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    const token = localStorage.getItem('sod_token');
+    if (token) {
+      refreshSwaps();
     }
-    return success;
-  }, []);
+  }, [refreshSwaps]);
 
-  const cancelSwap = useCallback((swapId: string) => {
-    setSwaps((prev) =>
-      prev.map((s) => {
-        if (s.id === swapId) {
-          return { ...s, status: 'Cancelled' };
-        }
-        return s;
-      })
-    );
-  }, []);
+  const requestSwap = useCallback(
+    async (payload: SwapCreatePayload, _requestingUser: User): Promise<SwapRequest> => {
+      setIsLoading(true);
+      try {
+        const res = await api.post('/swaps/request', {
+          duty_id: Number(payload.originalDutyId),
+          reason: payload.reason,
+        });
+
+        await refreshSwaps();
+        
+        // Return dummy or newly mapped item
+        const studentsRes = await api.get('/auth/students');
+        const dutyRes = await api.get('/tasks');
+        const mapped = mapBackendSwapToFrontend(res.data, dutyRes.data, studentsRes.data);
+        if (!mapped) throw new Error('Mapping failed.');
+        return mapped;
+      } catch (err: any) {
+        throw new Error(err.response?.data?.detail || 'Failed to request shift swap.');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refreshSwaps]
+  );
+
+  const acceptSwap = useCallback(
+    async (swapId: string, _acceptingUser: User): Promise<boolean> => {
+      setIsLoading(true);
+      try {
+        await api.post(`/swaps/${swapId}/respond?approve=true`);
+        await refreshSwaps();
+        return true;
+      } catch (err: any) {
+        alert(err.response?.data?.detail || 'Failed to accept swap request.');
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refreshSwaps]
+  );
+
+  const cancelSwap = useCallback(
+    async (swapId: string) => {
+      setIsLoading(true);
+      try {
+        await api.post(`/swaps/${swapId}/respond?approve=false`);
+        await refreshSwaps();
+      } catch (err) {
+        console.error('Failed to cancel swap request:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refreshSwaps]
+  );
 
   return {
     swaps,
@@ -121,5 +171,6 @@ export const useSwaps = () => {
     requestSwap,
     acceptSwap,
     cancelSwap,
+    refreshSwaps,
   };
 };

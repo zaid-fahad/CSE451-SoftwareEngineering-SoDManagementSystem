@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../services/useAuth';
+import { useNotifications } from '../services/useNotifications';
 import { DemoRoleBar } from '../component/UI/DemoRoleBar';
 import {
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   Menu,
   X,
   UserCheck,
+  Bell,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -24,9 +26,11 @@ interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
+  const { notifications, unreadCount, markAsRead } = useNotifications();
   const location = useLocation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
 
   const role = user?.role || 'Student';
 
@@ -122,6 +126,64 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Notifications Inbox Icon */}
+          {user?.role === 'Student' && (
+            <div className="relative">
+              <button
+                onClick={() => setIsNotifOpen(!isNotifOpen)}
+                className="p-2 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer relative"
+                title="Inbox Notifications"
+              >
+                <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-rose-600 text-white rounded-full text-[9px] font-bold px-1 min-w-[15px] h-[15px] flex items-center justify-center animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {isNotifOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden text-left animate-fadeIn">
+                  <div className="p-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">Inbox Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] text-blue-600 font-bold">{unreadCount} unread</span>
+                    )}
+                  </div>
+                  <div className="max-h-64 overflow-y-auto divide-y divide-slate-100">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-slate-400">
+                        No notifications yet.
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            markAsRead(String(n.id));
+                            setIsNotifOpen(false);
+                          }}
+                          className={`p-3 text-xs hover:bg-slate-50 cursor-pointer transition-colors ${
+                            !n.is_read ? 'bg-blue-50/50 font-semibold' : 'text-slate-600'
+                          }`}
+                        >
+                          <div className="font-bold text-slate-800 flex items-center justify-between">
+                            <span>{n.title}</span>
+                            {!n.is_read && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                            )}
+                          </div>
+                          <p className="mt-1 text-slate-600 leading-normal">{n.message}</p>
+                          <span className="text-[9px] text-slate-400 block mt-1.5">{n.created_at}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-100 border border-slate-200 text-xs font-medium">
             <UserCheck className="w-3.5 h-3.5 text-blue-600" />
             <span className="text-slate-900 font-bold">{user?.name}</span>

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ArrowRightLeft, AlertCircle } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Input } from '../UI/Input';
 import { SwapCreatePayload } from '../../model/swap';
 import { useDuties } from '../../services/useDuties';
+import { useAuth } from '../../services/useAuth';
 
 interface RequestSwapModalProps {
   isOpen: boolean;
@@ -16,12 +17,23 @@ export const RequestSwapModal: React.FC<RequestSwapModalProps> = ({
   onClose,
   onRequestSwap,
 }) => {
+  const { user } = useAuth();
   const { duties } = useDuties();
 
-  const [selectedDutyId, setSelectedDutyId] = useState<string>(duties[0]?.id || '');
+  const myAssignedDuties = duties.filter((d) =>
+    d.assignedStudents.some((s) => String(s.id) === String(user?.id))
+  );
+
+  const [selectedDutyId, setSelectedDutyId] = useState<string>('');
   const [reason, setReason] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (myAssignedDuties.length > 0 && !selectedDutyId) {
+      setSelectedDutyId(myAssignedDuties[0].id);
+    }
+  }, [myAssignedDuties, selectedDutyId]);
 
   if (!isOpen) return null;
 
@@ -29,9 +41,9 @@ export const RequestSwapModal: React.FC<RequestSwapModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    const targetDuty = duties.find((d) => d.id === selectedDutyId) || duties[0];
+    const targetDuty = myAssignedDuties.find((d) => d.id === selectedDutyId);
     if (!targetDuty) {
-      setError('Please select a duty to swap.');
+      setError('Please select one of your assigned duties to swap.');
       return;
     }
 
@@ -48,8 +60,8 @@ export const RequestSwapModal: React.FC<RequestSwapModalProps> = ({
 
       onClose();
       setReason('');
-    } catch {
-      setError('Failed to broadcast shift swap request.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to broadcast shift swap request.');
     } finally {
       setIsSubmitting(false);
     }
@@ -76,7 +88,7 @@ export const RequestSwapModal: React.FC<RequestSwapModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+            <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
               <span>{error}</span>
             </div>
@@ -86,18 +98,24 @@ export const RequestSwapModal: React.FC<RequestSwapModalProps> = ({
             <label htmlFor="dutySelect" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
               Select Assigned Duty to Trade
             </label>
-            <select
-              id="dutySelect"
-              value={selectedDutyId}
-              onChange={(e) => setSelectedDutyId(e.target.value)}
-              className="w-full bg-white text-slate-900 text-xs rounded-md p-2.5 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer"
-            >
-              {duties.map((duty) => (
-                <option key={duty.id} value={duty.id}>
-                  {duty.title} ({duty.day} {duty.startTime})
-                </option>
-              ))}
-            </select>
+            {myAssignedDuties.length === 0 ? (
+              <p className="text-xs text-rose-600 font-medium p-2 border border-rose-100 bg-rose-50 rounded">
+                You have no active duties assigned to request a swap for.
+              </p>
+            ) : (
+              <select
+                id="dutySelect"
+                value={selectedDutyId}
+                onChange={(e) => setSelectedDutyId(e.target.value)}
+                className="w-full bg-white text-slate-900 text-xs rounded-md p-2.5 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none cursor-pointer"
+              >
+                {myAssignedDuties.map((duty) => (
+                  <option key={duty.id} value={duty.id}>
+                    {duty.title} ({duty.day} {duty.startTime})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <Input
@@ -105,13 +123,19 @@ export const RequestSwapModal: React.FC<RequestSwapModalProps> = ({
             placeholder="e.g. Have an exam at the same hour"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
+            disabled={myAssignedDuties.length === 0}
           />
 
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
             <Button type="button" variant="outline" onClick={onClose} className="!py-2 !px-3 text-xs">
               Cancel
             </Button>
-            <Button type="submit" isLoading={isSubmitting} className="!py-2 !px-4 text-xs">
+            <Button
+              type="submit"
+              isLoading={isSubmitting}
+              disabled={myAssignedDuties.length === 0}
+              className="!py-2 !px-4 text-xs"
+            >
               Broadcast Swap Request
             </Button>
           </div>
