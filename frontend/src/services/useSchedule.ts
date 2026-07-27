@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { DayOfWeek, SlotType, AvailabilitySlot } from '../model/schedule';
+import { useState, useCallback, useEffect } from 'react';
+import { DayOfWeek, AvailabilitySlot } from '../model/schedule';
 import { api } from './api';
 
 export const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -17,155 +17,158 @@ export const HOURS = [
   '05:00 PM',
 ];
 
-// Default pre-populated realistic dummy data schedule
-const defaultDummySchedule: Record<string, { type: SlotType; courseCode?: string; dutyTitle?: string }> = {
-  'Monday-09:00 AM': { type: 'Duty', dutyTitle: 'SE Lab Duty' },
-  'Monday-10:00 AM': { type: 'Class', courseCode: 'CSE451' },
-  'Monday-11:00 AM': { type: 'Class', courseCode: 'CSE451' },
-  'Monday-03:00 PM': { type: 'Busy' },
+const get24HourRange = (timeLabel: string): { start24: string; end24: string } => {
+  const parts = timeLabel.split(' ');
+  const time = parts[0];
+  const ampm = parts[1];
+  const hourPart = parseInt(time.split(':')[0], 10);
+  const minutePart = time.split(':')[1];
 
-  'Tuesday-02:00 PM': { type: 'Class', courseCode: 'MAT211' },
-  'Tuesday-03:00 PM': { type: 'Class', courseCode: 'MAT211' },
+  let hour24 = hourPart;
+  if (ampm === 'PM' && hourPart !== 12) {
+    hour24 += 12;
+  } else if (ampm === 'AM' && hourPart === 12) {
+    hour24 = 0;
+  }
 
-  'Wednesday-10:00 AM': { type: 'Class', courseCode: 'CSE451' },
-  'Wednesday-11:00 AM': { type: 'Class', courseCode: 'CSE451' },
+  const startHourStr = String(hour24).padStart(2, '0');
+  const endHourStr = String(hour24 + 1).padStart(2, '0');
 
-  'Thursday-02:00 PM': { type: 'Class', courseCode: 'MAT211' },
-  'Thursday-03:00 PM': { type: 'Class', courseCode: 'MAT211' },
-
-  'Friday-09:00 AM': { type: 'Class', courseCode: 'PHY102' },
-  'Friday-10:00 AM': { type: 'Class', courseCode: 'PHY102' },
-  'Friday-01:00 PM': { type: 'Busy' },
-};
-
-// Helper to generate initial 6-day x 10-hour grid with pre-populated dummy data
-const initializeGrid = (): AvailabilitySlot[] => {
-  const grid: AvailabilitySlot[] = [];
-  DAYS.forEach((day) => {
-    HOURS.forEach((time) => {
-      const key = `${day}-${time}`;
-      const dummy = defaultDummySchedule[key];
-      grid.push({
-        id: key,
-        day,
-        time,
-        type: dummy ? dummy.type : 'Free',
-        courseCode: dummy?.courseCode,
-        dutyTitle: dummy?.dutyTitle,
-      });
-    });
-  });
-  return grid;
+  return {
+    start24: `${startHourStr}:${minutePart}`,
+    end24: `${endHourStr}:${minutePart}`,
+  };
 };
 
 export const useSchedule = () => {
-  const [slots, setSlots] = useState<AvailabilitySlot[]>(initializeGrid);
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Toggle Busy/Free manually for a student slot (Class slots remain locked)
-  const toggleSlot = useCallback((day: DayOfWeek, time: string) => {
-    setSlots((prev) =>
-      prev.map((slot) => {
-        if (slot.day === day && slot.time === time) {
-          if (slot.type === 'Class') return slot; // Non-editable class slot
-          const newType: SlotType = slot.type === 'Busy' ? 'Free' : 'Busy';
-          return { ...slot, type: newType };
-        }
-        return slot;
-      })
-    );
-  }, []);
-
-  // Parse raw text from IRAS Portal (Regex matching days & course codes)
-  const parseIRASText = useCallback(async (rawText: string): Promise<number> => {
-    setIsLoading(true);
-    let parsedCount = 0;
-
-    try {
-      const res = await api.post('/schedule/parse', { raw_text: rawText });
-      if (res.data && res.data.slots) {
-        setSlots(res.data.slots);
-        return res.data.slots_parsed || res.data.slots.length;
-      }
-    } catch {
-      // Fallback regex parsing engine
-      const updatedGrid = initializeGrid();
-      const textLines = rawText.split('\n');
-
-      const dayMap: Record<string, DayOfWeek> = {
-        mon: 'Monday',
-        monday: 'Monday',
-        tue: 'Tuesday',
-        tuesday: 'Tuesday',
-        wed: 'Wednesday',
-        wednesday: 'Wednesday',
-        thu: 'Thursday',
-        thursday: 'Thursday',
-        fri: 'Friday',
-        friday: 'Friday',
-        sat: 'Saturday',
-        saturday: 'Saturday',
-      };
-
-      textLines.forEach((line) => {
-        const lower = line.toLowerCase().trim();
-        if (!lower) return;
-
-        Object.keys(dayMap).forEach((key) => {
-          if (lower.includes(key)) {
-            const targetDay = dayMap[key];
-            const courseMatch = line.match(/([A-Z]{2,4}\s*\d{3})/i);
-            const courseCode = courseMatch ? courseMatch[1].toUpperCase() : 'CLASS';
-
-            HOURS.forEach((hour) => {
-              const hourNum = parseInt(hour.split(':')[0], 10);
-              const isPM = hour.includes('PM') && hourNum !== 12;
-              const normalizedHour = isPM ? hourNum + 12 : hourNum;
-
-              if (lower.includes(hour.slice(0, 5).toLowerCase()) || lower.includes(`${normalizedHour}:00`)) {
-                const targetIdx = updatedGrid.findIndex((s) => s.day === targetDay && s.time === hour);
-                if (targetIdx !== -1) {
-                  updatedGrid[targetIdx] = {
-                    ...updatedGrid[targetIdx],
-                    type: 'Class',
-                    courseCode,
-                  };
-                  parsedCount++;
-                }
-              }
-            });
-          }
-        });
-      });
-
-      setSlots(updatedGrid);
-    } finally {
-      setIsLoading(false);
-    }
-
-    return parsedCount;
-  }, []);
-
-  const loadDemoData = useCallback(() => {
-    setSlots(initializeGrid());
-  }, []);
-
-  const resetGrid = useCallback(() => {
-    // Reset all to free
+  const getEmptyGrid = useCallback(() => {
     const emptyGrid: AvailabilitySlot[] = [];
     DAYS.forEach((day) => {
       HOURS.forEach((time) => {
         emptyGrid.push({ id: `${day}-${time}`, day, time, type: 'Free' });
       });
     });
-    setSlots(emptyGrid);
+    return emptyGrid;
   }, []);
+
+  const fetchSchedule = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await api.get('/schedule/me');
+      const dbSlots = res.data;
+
+      const updatedGrid: AvailabilitySlot[] = [];
+      DAYS.forEach((day) => {
+        HOURS.forEach((time) => {
+          const key = `${day}-${time}`;
+          const { start24, end24 } = get24HourRange(time);
+
+          const match = dbSlots.find(
+            (dbSlot: any) =>
+              dbSlot.day_of_week === day &&
+              dbSlot.start_time < end24 &&
+              dbSlot.end_time > start24
+          );
+
+          if (match) {
+            updatedGrid.push({
+              id: key,
+              day,
+              time,
+              type: match.is_override ? 'Busy' : 'Class',
+              courseCode: match.course_code || undefined,
+            });
+          } else {
+            updatedGrid.push({
+              id: key,
+              day,
+              time,
+              type: 'Free',
+            });
+          }
+        });
+      });
+      setSlots(updatedGrid);
+    } catch (err) {
+      console.error('Failed to fetch schedule, loading empty grid:', err);
+      setSlots(getEmptyGrid());
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getEmptyGrid]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('sod_token');
+    if (token) {
+      fetchSchedule();
+    } else {
+      setSlots(getEmptyGrid());
+    }
+  }, [fetchSchedule, getEmptyGrid]);
+
+  const toggleSlot = useCallback(
+    async (day: DayOfWeek, time: string) => {
+      const slot = slots.find((s) => s.day === day && s.time === time);
+      if (!slot || slot.type === 'Class') return;
+
+      const isBusy = slot.type === 'Free';
+      const { start24, end24 } = get24HourRange(time);
+
+      setSlots((prev) =>
+        prev.map((s) => (s.day === day && s.time === time ? { ...s, type: isBusy ? 'Busy' : 'Free' } : s))
+      );
+
+      try {
+        await api.post('/schedule/override', {
+          day_of_week: day,
+          start_time: start24,
+          end_time: end24,
+          is_busy: isBusy,
+        });
+      } catch (err) {
+        console.error('Failed to save override:', err);
+        setSlots((prev) =>
+          prev.map((s) => (s.day === day && s.time === time ? { ...s, type: isBusy ? 'Free' : 'Busy' } : s))
+        );
+      }
+    },
+    [slots]
+  );
+
+  const parseIRASText = useCallback(
+    async (rawText: string): Promise<number> => {
+      setIsLoading(true);
+      try {
+        const res = await api.post('/schedule/parse', { raw_text: rawText });
+        await fetchSchedule();
+        return res.data.slots_parsed || 0;
+      } catch (err: any) {
+        const errMsg = err.response?.data?.detail || 'Failed to parse schedule.';
+        throw new Error(errMsg);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchSchedule]
+  );
+
+  const loadDemoData = useCallback(() => {
+    fetchSchedule();
+  }, [fetchSchedule]);
+
+  const resetGrid = useCallback(async () => {
+    setSlots(getEmptyGrid());
+  }, [getEmptyGrid]);
 
   return {
     slots,
     isLoading,
     toggleSlot,
     parseIRASText,
+    fetchSchedule,
     loadDemoData,
     resetGrid,
   };

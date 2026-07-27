@@ -9,7 +9,7 @@ import { Button } from '../component/UI/Button';
 import { Calendar, MapPin, Clock, Users, Search, Plus, UserPlus } from 'lucide-react';
 
 export const MasterCalendarPage: React.FC = () => {
-  const { duties, createDuty, assignStudent, checkStudentConflict } = useDuties();
+  const { duties, students, createDuty, assignStudent, checkStudentConflict } = useDuties();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [assignModalDuty, setAssignModalDuty] = useState<DutySlot | null>(null);
@@ -211,6 +211,7 @@ export const MasterCalendarPage: React.FC = () => {
       {/* Modals */}
       <CreateDutyModal
         isOpen={isCreateModalOpen}
+        students={students}
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={createDuty}
       />
@@ -218,6 +219,7 @@ export const MasterCalendarPage: React.FC = () => {
       <AssignStudentModal
         isOpen={!!assignModalDuty}
         duty={assignModalDuty}
+        students={students}
         onClose={() => setAssignModalDuty(null)}
         onAssign={assignStudent}
         checkStudentConflict={checkStudentConflict}

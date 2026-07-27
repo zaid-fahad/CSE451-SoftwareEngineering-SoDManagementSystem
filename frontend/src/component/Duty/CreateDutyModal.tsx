@@ -4,15 +4,16 @@ import { Button } from '../UI/Button';
 import { Input } from '../UI/Input';
 import { DutyCreateRequest } from '../../model/duty';
 import { DAYS, HOURS } from '../../services/useSchedule';
-import { MOCK_STUDENTS } from '../../services/useDuties';
+import { User } from '../../model/user';
 
 interface CreateDutyModalProps {
   isOpen: boolean;
+  students: User[];
   onClose: () => void;
   onCreate: (data: DutyCreateRequest) => Promise<any>;
 }
 
-export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClose, onCreate }) => {
+export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, students, onClose, onCreate }) => {
   const [formData, setFormData] = useState<DutyCreateRequest>({
     title: '',
     location: '',
@@ -61,8 +62,8 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
         maxStudents: 2,
         assignedStudentId: '',
       });
-    } catch {
-      setError('Failed to create duty slot.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create duty slot.');
     } finally {
       setIsSubmitting(false);
     }
@@ -89,7 +90,7 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+            <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
               <span>{error}</span>
             </div>
@@ -201,11 +202,11 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
               onChange={handleChange}
             />
 
-            <div className="flex flex-col space-y-1.5 w-full text-left">
+            <div className="flex flex-col space-y-1.5 w-full text-left col-span-2">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Initial Student Assignment
+                Initial Student Assignment (Optional)
               </label>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-1 border border-slate-200 rounded">
                 <button
                   type="button"
                   onClick={() => setFormData((prev) => ({ ...prev, assignedStudentId: '' }))}
@@ -217,7 +218,7 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
                 >
                   None
                 </button>
-                {MOCK_STUDENTS.map((st) => (
+                {students.map((st) => (
                   <button
                     key={st.id}
                     type="button"
@@ -229,28 +230,6 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, onClos
                     }`}
                   >
                     {st.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col space-y-1.5 w-full text-left">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Supervising Faculty Member
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {['Dr. Sarah Connor (Faculty)', 'Prof. Alan Turing (Faculty)'].map((fac) => (
-                  <button
-                    key={fac}
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, assignedFaculty: fac }))}
-                    className={`px-2.5 py-1 rounded text-xs font-medium cursor-pointer border transition-colors ${
-                      formData.assignedFaculty === fac
-                        ? 'bg-purple-600 text-white border-purple-600'
-                        : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
-                    }`}
-                  >
-                    {fac.split(' ')[0]} {fac.split(' ')[1]} {fac.split(' ')[2]}
                   </button>
                 ))}
               </div>
