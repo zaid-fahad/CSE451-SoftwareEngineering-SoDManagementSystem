@@ -18,6 +18,7 @@ import {
   X,
   UserCheck,
   Bell,
+  DollarSign,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -52,6 +53,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       label: 'Shift Swap Portal',
       path: '/swaps',
       icon: ArrowRightLeft,
+      roles: ['Student'],
+    },
+    {
+      label: 'Submit Duty Payroll Claim',
+      path: '/submit-bill',
+      icon: DollarSign,
       roles: ['Student'],
     },
     {
