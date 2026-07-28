@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Routes, Route, useNavigate, useParams, Link } from 'react-router-dom';
+import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { useDuties } from '../services/useDuties';
 import { useAttendance } from '../services/useAttendance';
 import { Button } from '../component/UI/Button';
@@ -23,8 +23,7 @@ import {
   FileText,
   Zap,
   ScanLine,
-  Maximize2,
-  ShieldCheck
+  Maximize2
 } from 'lucide-react';
 import { DutySlot } from '../model/duty';
 
@@ -41,7 +40,7 @@ const DutySlotsListPage: React.FC<{ duties: DutySlot[] }> = ({ duties }) => {
             <span>Scheduled Department Duty Shift Slots</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Select a duty shift slot below to open its dedicated attendance roster table page.
+            Select a duty shift slot below to open its dedicated attendance roster table page and launch the RFID scanner.
           </p>
         </div>
       </div>
@@ -76,7 +75,7 @@ const DutySlotsListPage: React.FC<{ duties: DutySlot[] }> = ({ duties }) => {
             </div>
 
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-blue-600 group-hover:translate-x-1 transition-transform">
-              <span>Take Shift Attendance Page →</span>
+              <span>Open Duty Roster & RFID Scanner →</span>
               <ChevronRight className="w-4 h-4" />
             </div>
           </div>
@@ -143,7 +142,7 @@ const ShiftAttendancePage: React.FC<{
 
   return (
     <div className="space-y-5 animate-fadeIn">
-      {/* Header Bar with Back Button */}
+      {/* Header Bar with Back Button & Full-Screen RFID Button */}
       <div className="card-enterprise p-5 space-y-3 bg-gradient-to-r from-blue-50 via-indigo-50/50 to-slate-50 border-blue-200">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -167,15 +166,21 @@ const ShiftAttendancePage: React.FC<{
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-bold shadow-xs">
-              {activeDuty.assignedStudents.length} Students Assigned
-            </span>
+          <div className="flex items-center gap-2.5 self-start sm:self-auto">
+            {/* FULL-SCREEN RFID KIOSK BUTTON ONLY SHOWN WHEN DUTY SLOT IS SELECTED */}
+            <Button
+              type="button"
+              onClick={() => navigate(`/manager/attendance/duty/${activeDuty.id}/kiosk`)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-2 px-3 font-bold gap-1.5 shadow-xs"
+            >
+              <Maximize2 className="w-4 h-4" />
+              <span>Open Full-Screen RFID Kiosk</span>
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Embedded Clean Light Mode RFID Scanner Bar */}
+      {/* Embedded Wireless RFID Hardware Scanner Bar */}
       <div className="card-enterprise p-4 bg-white border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 shrink-0">
@@ -183,7 +188,7 @@ const ShiftAttendancePage: React.FC<{
           </div>
           <div>
             <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
-              <span>Wireless RFID Hardware Terminal Active</span>
+              <span>Wireless RFID Hardware Terminal Active ({activeDuty.title})</span>
               <span className="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                 ONLINE
               </span>
@@ -343,13 +348,16 @@ const ShiftAttendancePage: React.FC<{
   );
 };
 
-// FULL-SCREEN SEPARATE SUBPAGE: WIRELESS RFID KIOSK TERMINAL (/manager/attendance/rfid-kiosk)
+// FULL-SCREEN SEPARATE SUBPAGE FOR A SPECIFIC DUTY SLOT (/manager/attendance/duty/:dutyId/kiosk)
 const FullScreenRfidKioskPage: React.FC<{
   duties: DutySlot[];
   students: any[];
   scanRfidCard: any;
 }> = ({ duties, students, scanRfidCard }) => {
+  const { dutyId } = useParams<{ dutyId: string }>();
   const navigate = useNavigate();
+  const activeDuty = duties.find((d) => d.id === dutyId) || duties[0];
+
   const [rfidInput, setRfidInput] = useState<string>('');
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [rfidError, setRfidError] = useState<string | null>(null);
@@ -388,34 +396,46 @@ const FullScreenRfidKioskPage: React.FC<{
     }, 300);
   };
 
+  if (!activeDuty) {
+    return (
+      <div className="card-enterprise p-6 text-center space-y-3">
+        <div className="text-sm font-bold text-slate-700">Duty Shift Slot Not Found</div>
+        <Button onClick={() => navigate('/manager/attendance')}>Return to Duty Slots List</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-[85vh] p-6 bg-slate-50 space-y-6 animate-fadeIn text-left">
-      {/* Top Clean Light Mode Kiosk Bar */}
+      {/* Top Clean Light Mode Kiosk Bar with Duty Context */}
       <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0">
             <Radio className="w-6 h-6 animate-pulse" />
           </div>
           <div>
+            <div className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+              Selected Shift Context: {activeDuty.location}
+            </div>
             <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <span>Full-Screen High-Speed RFID Kiosk Terminal</span>
+              <span>{activeDuty.title} RFID Kiosk Terminal</span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                 13.56 MHz NFC ONLINE
               </span>
             </h1>
-            <p className="text-xs text-slate-500">
-              Standalone wall-mounted hardware scanner terminal. Tap physical badge for instant check-in / out.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Shift Time: {activeDuty.day} • {activeDuty.startTime} - {activeDuty.endTime} ({activeDuty.assignedStudents.length} assigned students)
             </p>
           </div>
         </div>
 
         <button
           type="button"
-          onClick={() => navigate('/manager/attendance')}
-          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition-all cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+          onClick={() => navigate(`/manager/attendance/duty/${activeDuty.id}`)}
+          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition-all cursor-pointer flex items-center gap-1.5 self-start sm:self-auto shadow-xs"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Exit Kiosk Subpage</span>
+          <span>Exit Full-Screen Kiosk Mode</span>
         </button>
       </div>
 
@@ -434,7 +454,7 @@ const FullScreenRfidKioskPage: React.FC<{
 
             <div>
               <div className="text-base font-bold text-slate-900">Hold RFID Card Near Reader</div>
-              <div className="text-xs text-slate-500 mt-1">Continuous Auto-Focus Sensor Listening...</div>
+              <div className="text-xs text-slate-500 mt-1">Continuous Auto-Focus Sensor Listening ({activeDuty.title})</div>
             </div>
           </div>
 
@@ -472,10 +492,10 @@ const FullScreenRfidKioskPage: React.FC<{
               </div>
             </form>
 
-            {/* Quick Tap Demo Badges */}
+            {/* Quick Tap Demo Badges for Assigned Students */}
             <div className="space-y-2 pt-2">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                Hardware Quick-Tap Badge Simulator:
+                Assigned Students Quick-Tap Simulator:
               </div>
               <div className="flex flex-wrap gap-2">
                 {students.map((s) => (
@@ -722,24 +742,14 @@ export const AttendanceManagerPage: React.FC = () => {
         <div className="space-y-1">
           <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <ClipboardCheck className="w-6 h-6 text-blue-600" />
-            <span>Duty Shift Attendance & RFID Kiosk</span>
+            <span>Duty Shift Attendance Portal</span>
           </h1>
           <p className="text-xs text-slate-500">
-            Clean Light Mode multi-page portal with dedicated Full-Screen RFID Kiosk Subpage.
+            Select a scheduled duty shift slot below to manage attendance rosters and launch the RFID scanner.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate('/manager/attendance/rfid-kiosk')}
-            className="text-xs gap-1.5 border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold"
-          >
-            <Radio className="w-4 h-4 text-emerald-600" />
-            <span>Open RFID Kiosk Subpage</span>
-          </Button>
-
+        <div className="flex items-center gap-3 shrink-0">
           <Button
             type="button"
             variant="outline"
@@ -822,9 +832,9 @@ export const AttendanceManagerPage: React.FC = () => {
           }
         />
 
-        {/* Dedicated RFID Kiosk Subpage: /manager/attendance/rfid-kiosk */}
+        {/* Dedicated RFID Kiosk Subpage for Duty Slot: /manager/attendance/duty/:dutyId/kiosk */}
         <Route
-          path="/rfid-kiosk"
+          path="/duty/:dutyId/kiosk"
           element={
             <FullScreenRfidKioskPage
               duties={duties}
