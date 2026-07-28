@@ -218,7 +218,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </div>
 
             {filteredNavItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = item.path === '/dashboard' ? location.pathname === '/dashboard' : location.pathname.startsWith(item.path);
               const Icon = item.icon;
 
               return (
