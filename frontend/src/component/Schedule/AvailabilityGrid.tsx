@@ -1,7 +1,7 @@
 import React from 'react';
 import { DayOfWeek, AvailabilitySlot } from '../../model/schedule';
 import { DAYS, HOURS } from '../../services/useSchedule';
-import { BookOpen, Clock, AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
+import { BookOpen, Clock, AlertCircle, CheckCircle2, RotateCcw, Download } from 'lucide-react';
 import { Button } from '../UI/Button';
 
 interface AvailabilityGridProps {
@@ -9,6 +9,7 @@ interface AvailabilityGridProps {
   onToggleSlot: (day: DayOfWeek, time: string) => void;
   onResetGrid?: () => void;
   onLoadDemoData?: () => void;
+  onExportPNG?: () => void;
 }
 
 export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
@@ -16,6 +17,7 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
   onToggleSlot,
   onResetGrid,
   onLoadDemoData,
+  onExportPNG,
 }) => {
   // Metric calculations
   const classCount = slots.filter((s) => s.type === 'Class').length;
@@ -55,6 +57,13 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
             <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
             <span>{busyCount} Manual Overrides</span>
           </div>
+
+          {onExportPNG && (
+            <Button variant="primary" onClick={onExportPNG} className="!py-1 !px-2.5 text-xs gap-1.5 shadow-xs bg-blue-600 hover:bg-blue-700">
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Calendar (.png)</span>
+            </Button>
+          )}
 
           {onLoadDemoData && (
             <Button variant="secondary" onClick={onLoadDemoData} className="!py-1 !px-2 text-xs">

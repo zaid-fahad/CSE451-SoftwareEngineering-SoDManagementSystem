@@ -22,7 +22,7 @@ export const StudentDutiesPage: React.FC = () => {
       </div>
 
       {/* Duties List */}
-      <StudentDutyList duties={duties} user={user} />
+      <StudentDutyList duties={duties} user={user} compactOverview={false} />
     </div>
   );
 };

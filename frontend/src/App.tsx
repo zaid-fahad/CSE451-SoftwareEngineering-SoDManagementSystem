@@ -9,6 +9,7 @@ import { AdminBilling } from './pages/AdminBilling';
 import { DutyManager } from './pages/DutyManager';
 import { SwapPortal } from './pages/SwapPortal';
 import { StudentDutiesPage } from './pages/StudentDutiesPage';
+import { StudentBillSubmitPage } from './pages/StudentBillSubmitPage';
 import { FacultyPortal } from './pages/FacultyPortal';
 import { StudentCalendarInspector } from './pages/StudentCalendarInspector';
 import { UserManagementPage } from './pages/UserManagementPage';
@@ -52,6 +53,16 @@ export const App: React.FC = () => {
               <ProtectedRoute allowedRoles={['Student']}>
                 <AppLayout>
                   <SwapPortal />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/submit-bill"
+            element={
+              <ProtectedRoute allowedRoles={['Student']}>
+                <AppLayout>
+                  <StudentBillSubmitPage />
                 </AppLayout>
               </ProtectedRoute>
             }
