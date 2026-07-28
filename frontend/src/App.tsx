@@ -97,7 +97,7 @@ export const App: React.FC = () => {
             }
           />
           <Route
-            path="/manager/attendance"
+            path="/manager/attendance/*"
             element={
               <ProtectedRoute allowedRoles={['LabManager', 'DeptManager', 'Faculty']}>
                 <AppLayout>

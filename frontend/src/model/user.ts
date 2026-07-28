@@ -7,6 +7,7 @@ export interface User {
   email: string;
   role: UserRole;
   isActive?: boolean;
+  rfidTag?: string;
 }
 
 export interface RegisterRequest {
@@ -15,6 +16,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   role?: UserRole;
+  rfidTag?: string;
 }
 
 export interface LoginRequest {

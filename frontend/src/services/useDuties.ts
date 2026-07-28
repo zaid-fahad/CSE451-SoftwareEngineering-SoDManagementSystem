@@ -6,10 +6,10 @@ import { api } from './api';
 
 // Export MOCK_STUDENTS to maintain backwards compatibility and prevent typescript failures in other modules
 export const MOCK_STUDENTS: User[] = [
-  { id: '1', department_id: '2021-1-60-001', name: 'Alice Smith', email: 'alice@univ.edu', role: 'Student' },
-  { id: '2', department_id: '2021-1-60-045', name: 'Bob Johnson', email: 'bob@univ.edu', role: 'Student' },
-  { id: '3', department_id: '2021-1-60-089', name: 'Charlie Brown', email: 'charlie@univ.edu', role: 'Student' },
-  { id: '4', department_id: '2021-1-60-112', name: 'Diana Prince', email: 'diana@univ.edu', role: 'Student' },
+  { id: '1', department_id: '2021-1-60-001', name: 'Alice Smith', email: 'alice@univ.edu', role: 'Student', rfidTag: 'RFID-2021-001' },
+  { id: '2', department_id: '2021-1-60-045', name: 'Bob Johnson', email: 'bob@univ.edu', role: 'Student', rfidTag: 'RFID-2021-045' },
+  { id: '3', department_id: '2021-1-60-089', name: 'Charlie Brown', email: 'charlie@univ.edu', role: 'Student', rfidTag: 'RFID-2021-089' },
+  { id: '4', department_id: '2021-1-60-112', name: 'Diana Prince', email: 'diana@univ.edu', role: 'Student', rfidTag: 'RFID-2021-112' },
 ];
 
 const convertTo24h = (time12h: string): string => {
@@ -262,6 +262,12 @@ export const useDuties = () => {
     [refreshData]
   );
 
+  const assignRfidTag = useCallback((studentId: string, rfidTag: string) => {
+    setStudents((prev) =>
+      prev.map((s) => (String(s.id) === String(studentId) ? { ...s, rfidTag: rfidTag.trim().toUpperCase() } : s))
+    );
+  }, []);
+
   return {
     duties,
     students,
@@ -271,6 +277,7 @@ export const useDuties = () => {
     assignStudent,
     removeStudent,
     deleteDuty,
+    assignRfidTag,
     refreshData,
   };
 };
