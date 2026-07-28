@@ -1,4 +1,5 @@
 export type AttendanceStatus = 'Present' | 'Absent' | 'Late';
+export type AttendanceMethod = 'Manual' | 'RFID_Scan';
 
 export interface AttendanceRecord {
   id: string;
@@ -10,6 +11,9 @@ export interface AttendanceRecord {
   status: AttendanceStatus;
   hoursCompleted: number;
   notes?: string;
+  rfidTag?: string;
+  method?: AttendanceMethod;
+  scanTimestamp?: string;
 }
 
 export interface MarkAttendancePayload {
@@ -21,4 +25,7 @@ export interface MarkAttendancePayload {
   status: AttendanceStatus;
   hoursCompleted: number;
   notes?: string;
+  rfidTag?: string;
+  method?: AttendanceMethod;
+  scanTimestamp?: string;
 }
