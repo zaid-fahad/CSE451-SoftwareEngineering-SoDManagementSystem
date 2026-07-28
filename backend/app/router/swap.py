@@ -11,27 +11,14 @@ from app.model.notification import Notification
 from app.schemas.swap import SwapRequest, SwapResponse, NotificationResponse
 from app.services.security import get_current_user
 from app.services.conflict import get_student_schedule_conflict
+from app.services.swap import (
+    has_overlapping_duty,
+    broadcast_swap_notifications,
+    process_swap_response
+)
 
 router = APIRouter(prefix="/swaps", tags=["Shift Swaps"])
 notif_router = APIRouter(prefix="/notifications", tags=["Notifications"])
-
-# Helper function to check if a student has an overlapping duty assignment
-async def has_overlapping_duty(
-    db: AsyncSession,
-    student_id: int,
-    date: str,
-    start_time: str,
-    end_time: str
-) -> bool:
-    result = await db.execute(
-        select(Duty).where(
-            (Duty.assigned_student_id == student_id) &
-            (Duty.date == date) &
-            (Duty.start_time < end_time) &
-            (Duty.end_time > start_time)
-        )
-    )
-    return result.scalars().first() is not None
 
 @router.post("/request", response_model=SwapResponse, status_code=status.HTTP_201_CREATED)
 async def request_swap(
@@ -126,29 +113,7 @@ async def request_swap(
         db.add(new_swap)
         await db.commit()
 
-        # Find all eligible students (non-conflicted)
-        student_res = await db.execute(
-            select(User).where((User.role == "Student") & (User.id != current_user.id))
-        )
-        all_students = student_res.scalars().all()
-
-        broadcasts_sent = 0
-        for student in all_students:
-            conflict = await get_student_schedule_conflict(
-                db, student.id, duty.day_of_week, duty.start_time, duty.end_time
-            )
-            has_duty = await has_overlapping_duty(db, student.id, duty.date, duty.start_time, duty.end_time)
-            
-            if not conflict and not has_duty:
-                notif = Notification(
-                    user_id=student.id,
-                    title="Shift Swap Broadcast",
-                    message=f"{current_user.name} is looking to swap their shift: '{duty.title}' on {duty.date} at {duty.start_time}-{duty.end_time}. Reason: {request_data.reason or 'Not specified'}."
-                )
-                db.add(notif)
-                broadcasts_sent += 1
-
-        await db.commit()
+        await broadcast_swap_notifications(db, current_user, duty, request_data.reason)
         await db.refresh(new_swap)
         return new_swap
 
@@ -211,39 +176,7 @@ async def respond_to_swap(
                 detail="You have a schedule conflict (class or duty) during this shift."
             )
 
-        # Update swap and duty status (Reassignment execution)
-        swap.status = "Accepted"
-        swap.target_student_id = current_user.id
-        duty.assigned_student_id = current_user.id
-
-        # Notify requester
-        notif = Notification(
-            user_id=swap.requester_id,
-            title="Swap Request Accepted",
-            message=f"{current_user.name} accepted your shift swap request for '{duty.title}' on {duty.date}."
-        )
-        db.add(notif)
-        await db.commit()
-        await db.refresh(swap)
-        return swap
-
-    else:
-        # Reject
-        if swap.target_student_id:
-            swap.status = "Rejected"
-            # Notify requester
-            notif = Notification(
-                user_id=swap.requester_id,
-                title="Swap Request Declined",
-                message=f"{current_user.name} declined your private shift swap request for '{duty.title}' on {duty.date}."
-            )
-            db.add(notif)
-            await db.commit()
-        else:
-            # Public swap: current user declines privately (just ignore, or no change to state)
-            return swap
-        await db.refresh(swap)
-        return swap
+    return await process_swap_response(db, swap, duty, current_user, approve)
 
 # ----------------- Notifications Router -----------------
 
