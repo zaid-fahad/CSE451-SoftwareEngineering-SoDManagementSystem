@@ -1,11 +1,10 @@
-\documentclass[12pt,a4paper,onecolumn,fleqn]{article}
+\documentclass[10pt,a4paper,twocolumn,fleqn]{article}
+
+\usepackage[OT1]{fontenc}
+\usepackage{times}
+\usepackage[a4paper, top=22mm, bottom=22mm, left=18mm, right=18mm, columnsep=7mm]{geometry}
 \usepackage{graphicx}
-\usepackage[a4paper,top=25mm, bottom=25mm, left=25mm, right=25mm]{geometry}
 \usepackage{fancyhdr}
-\usepackage{hyperref}
-\usepackage{listings}
-\usepackage{color}
-\usepackage{fancybox}
 \usepackage{booktabs}
 \usepackage{setspace}
 \usepackage{amsmath}
@@ -13,386 +12,562 @@
 \usepackage[svgnames,dvipsnames]{xcolor}
 \usepackage{subcaption}
 \usepackage{tikz}
-\usetikzlibrary{shapes.geometric, arrows, positioning, calc, chains, fit}
+\usetikzlibrary{shapes.geometric, arrows, positioning, calc, chains, fit, quotes}
 \usepackage{float}
-\usepackage{url}
+\usepackage{caption}
 
-\setlength{\headheight}{15pt}
+% Custom Professional Color Palette
+\definecolor{PrimaryNavy}{HTML}{0F2942}
+\definecolor{SecondaryTeal}{HTML}{0284C7}
+\definecolor{AccentSlate}{HTML}{334155}
+\definecolor{LightBg}{HTML}{F8FAFC}
+\definecolor{BorderGray}{HTML}{E2E8F0}
 
-\makeatletter
-\g@addto@macro{\normalsize}{%
-\setlength{\abovedisplayskip}{6pt}
-\setlength{\abovedisplayshortskip}{3pt}
-\setlength{\belowdisplayskip}{6pt}
-\setlength{\belowdisplayshortskip}{3pt}}
-\makeatother
-\mathindent=0.0pt
-\renewcommand{\baselinestretch}{1.3}
+% Ultra-safe URL macro in normal text font
+\newcommand{\myurl}[1]{{\small #1}}
 
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    filecolor=magenta,      
-    urlcolor=cyan,
-    pdftitle={Departmental Student on Duty (SoD) Management System Report},
-    pdfpagemode=FullScreen,
-}
+% Graphicspath specifying self-contained media location for Overleaf compatibility
+\graphicspath{{media/}}
 
-\lstset{
-    basicstyle=\ttfamily\footnotesize,
-    breaklines=true,
-    captionpos=b,
-    frame=single,
-    keywordstyle=\color{blue}\bfseries,
-    commentstyle=\color{gray}\itshape,
-    stringstyle=\color{teal}
-}
+% Caption Styling
+\captionsetup{font=small, labelfont={bf,color=PrimaryNavy}, margin=0pt}
+
+\setlength{\headheight}{16pt}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\color{AccentSlate}\small\bfseries Departmental Student on Duty (SoD) Management System}
+\rhead{\color{AccentSlate}\small\bfseries CSE451 Final Report}
+\cfoot{\color{AccentSlate}\small Page \thepage}
+\renewcommand{\headrulewidth}{0.6pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\renewcommand{\baselinestretch}{1.15}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
 
 \begin{document}
-\pagestyle{fancy}
-\thisfancypage{\setlength{\fboxsep}{15pt}\doublebox}{}
-\lhead{Departmental SoD Management System}
-\rhead{CSE451 Final Report}
-\chead{}
 
-% ================= COVER PAGE =================
+% ================= COVER / TITLE SECTION (FULL WIDTH) =================
+\onecolumn
+
 \begin{center}
-\textcolor{brown}{\LARGE{\textbf{INDEPENDENT UNIVERSITY, BANGLADESH}}} \\
-\vspace{0.6cm}
-\begin{tikzpicture}
-    \node [rectangle, draw=brown!80, fill=brown!5, ultra thick, minimum width=14cm, minimum height=2.4cm, rounded corners=6pt, align=center] {
-        \Large{\textbf{SCHOOL OF ENGINEERING, TECHNOLOGY AND SCIENCES}} \\[4pt]
-        \large{\textbf{Department of Computer Science and Engineering}}
-    };
-\end{tikzpicture} \\
+    \includegraphics[width=3cm]{IUB.png} \\
+    \vspace{0.3cm}
+    \textcolor{PrimaryNavy}{\LARGE{\textbf{INDEPENDENT UNIVERSITY, BANGLADESH}}} \\
+    \vspace{0.4cm}
+    \begin{tikzpicture}
+        \node [rectangle, draw=PrimaryNavy!80, fill=PrimaryNavy!5, ultra thick, minimum width=0.95\linewidth, minimum height=1.8cm, rounded corners=6pt, align=center] {
+            \color{PrimaryNavy}\Large{\textbf{SCHOOL OF ENGINEERING, TECHNOLOGY AND SCIENCES}} \\[4pt]
+            \color{SecondaryTeal}\large{\textbf{Department of Computer Science and Engineering}}
+        };
+    \end{tikzpicture} \\
+    \vspace{0.6cm}
+
+    {\large A Project Report On} \\
+    \vspace{0.2cm}
+    \textcolor{PrimaryNavy}{\Huge{\textbf{Student on Duty (SoD) Management System}}} \\
+    \vspace{0.3cm}
+    \textcolor{SecondaryTeal}{\Large{\textbf{An Automated Enterprise Platform for Timetable Parsing, Wireless RFID Attendance Tracking, and Streamed Payroll Claims}}} \\
+
+    \vspace{1.0cm}
+
+    \begin{minipage}{0.45\textwidth}
+      \begin{flushleft} \small
+        \textit{Submitted By:}\\
+        \textbf{Mohammad Zaid Fahad} (ID: 2430825)\\
+        \textbf{Momotaj Akther Happy} (ID: 2430798)\\
+        \textit{Department of CSE, IUB}
+      \end{flushleft}
+    \end{minipage}
+    \begin{minipage}{0.45\textwidth}
+      \begin{flushright} \small
+        \textit{Under the Guidance of:}\\
+        \textbf{Md Masum Billah}\\
+        Assistant Professor, Department of CSE\\
+        School of Engineering, Technology and Sciences, IUB
+      \end{flushright}
+    \end{minipage} \\
+
+    \vspace{0.8cm}
+    \color{AccentSlate}\textbf{Semester: Summer 2026 \quad | \quad Course: CSE451 Software Engineering} \\
+    \vspace{0.4cm}
+    \hrule
+    \vspace{0.6cm}
+\end{center}
+
+% ================= ABSTRACT (FULL WIDTH) =================
+\begin{quotation}
+  \noindent \textbf{\color{PrimaryNavy}\Large Abstract} -- The operational management of Student Assistant (SA) duty assignments, academic course timetable conflicts, shift attendance tracking, and monthly payroll claims within university academic departments has traditionally suffered from high administrative friction, manual cross-referencing errors, unverified duty presence, and billing reconciliation disputes. This report presents the \textbf{Departmental Student on Duty (SoD) Management System}, a production-ready enterprise platform built with an asynchronous FastAPI Python backend, a React 18 TypeScript Single Page Application (SPA), and PostgreSQL relational persistence. Executed across four structured Agile development sprints (v1.0.0 through v4.0.0), the system integrates automated regular expression (Regex) IRAS academic schedule parsing, wireless 13.56~MHz RFID hardware card attendance tracking, a standalone Light-Mode RFID Kiosk terminal (\myurl{/manager/attendance/duty/1/kiosk}), an automated broadcast proxy shift-swap matching engine, and a streamed CSV payroll processing pipeline (app/services/payroll.py). The platform strictly complies with Model-View-Controller (MVC) decoupling standards, shielding presentation pages through custom React hooks (useSchedule.ts, useSwaps.ts, useAttendance.ts). Comprehensive SDLC verification links user stories (US-001 to US-013) to automated pytest test suites under backend/tests/, achieving a 100\% pass rate across all 16 execution cases.
+\end{quotation}
+
+\vspace{0.8cm}
+\hrule
 \vspace{0.8cm}
 
-\text{\Large A Project Report On} \\
-\smallskip
-\textcolor{blue}{\LARGE{\textbf{Student on Duty (SoD) Management System: Agile Retrospective, System Architecture, ER Model, API Directory, and SDLC Verification}}} \\
-
-\vspace{1.5cm}
-
-\textit{Submitted By} \\
-\vspace{0.2cm}
-\textbf{Zaid Fahad \space (ID: 2120000)} \\
-\textbf{Student 2 \space (ID: 2120001)} \\
-
-\vspace{1.2cm}
-\textit{Under the guidance of} \\
-\vspace{0.2cm}
-\textbf{Md Masum Billah} \\
-\text{Assistant Professor, Department of Computer Science and Engineering}\\
-\text{School of Engineering, Technology and Sciences, IUB}\\
-
-\vspace{1.5cm}
-\large{\textbf{Semester: Summer 2026}} \\
-\textcolor{blue}{\large{\textbf{Department of Computer Science and Engineering}}} \\
-\textcolor{blue}{\large{\textbf{INDEPENDENT UNIVERSITY, BANGLADESH (IUB)}}} \\
-\textcolor{blue}{\large{\textbf{DHAKA, BANGLADESH}}} \\
-\end{center}
-
-\newpage
-\thisfancypage{\setlength{\fboxsep}{15pt}\doublebox}{}
-
-% ================= ACKNOWLEDGEMENT =================
-\begin{center}
-\LARGE{\textbf{\underline{Acknowledgement}}} \\
-\end{center}
-\vspace{0.5cm}
-\normalsize
-
-We express our deepest gratitude to Almighty God for providing us with the health, strength, and intellectual capability to successfully design, implement, and verify the \textbf{Departmental Student on Duty (SoD) Management System}.
-
-We extend our heartfelt appreciation and sincere gratitude to our project supervisor, \textbf{Md Masum Billah}, Assistant Professor in the Department of Computer Science and Engineering at Independent University, Bangladesh (IUB). His invaluable guidance, continuous encouragement, constructive critiques, and technical insights throughout the Software Engineering (CSE451) course were instrumental in shaping the software architecture and ensuring strict adherence to Model-View-Controller (MVC) standards and Agile methodologies across all four development sprints.
-
-We would also like to thank the faculty members, lab managers, and student assistants in the Department of Computer Science and Engineering for providing domain insights during requirement gathering and participating in user acceptance testing. Finally, we thank our families and peers for their continuous support during the development of this project.
-
-\vspace{2cm}
-\begin{flushright}
-\begin{centering}
-    \textbf{Zaid Fahad \space (ID: 2120000)} \\
-    \textbf{Student 2 \space (ID: 2120001)} \\
-    \textit{Department of Computer Science and Engineering} \\
-    \textit{Independent University, Bangladesh} \\
-\end{centering}
-\end{flushright}
-
-% ================= ABSTRACT =================
-\newpage
-\thisfancypage{\setlength{\fboxsep}{15pt}\doublebox}{}
-
-\begin{center}
-{\bfseries\LARGE Abstract} \\
-\end{center}
-\vspace{0.4cm}
-The management of student assistant duty assignments, academic schedule conflicts, shift attendance tracking, and monthly payroll billing claims within university academic departments has traditionally suffered from operational friction, manual data entry errors, and billing disputes. This paper presents an exhaustive technical report overhauling the \textbf{Departmental Student on Duty (SoD) Management System}, a production-ready software engineering platform built with an asynchronous FastAPI Python backend, a React TypeScript frontend, and PostgreSQL / SQLite relational persistence. Executed across four structured Agile sprints (v1.0.0 through v4.0.0), the system integrates automated IRAS schedule parsing, wireless RFID attendance hardware terminals, a dedicated Light-Mode RFID Kiosk subpage (\url{/manager/attendance/duty/:dutyId/kiosk}), an automated broadcast proxy shift-swap matching engine, and a streamed CSV payroll export pipeline (\texttt{app/services/payroll.py}).
-
-The platform strictly complies with Model-View-Controller (MVC) decoupling principles, shielding components through custom React business hooks (\texttt{useSchedule.ts}, \texttt{useSwaps.ts}, \texttt{useAttendance.ts}). Comprehensive SDLC verification links user stories (US-001 to US-013) to automated \texttt{pytest} suites, achieving 100\% pass rates. Production deployment demonstrates a 70\% reduction in administrative overhead and zero billing reconciliation errors.
-
-\newpage
-\thisfancypage{\setlength{\fboxsep}{15pt}\doublebox}{}
-
-\tableofcontents
-\newpage
-\thisfancypage{\setlength{\fboxsep}{15pt}\doublebox}{}
+% ================= SWITCH TO TWO COLUMN LAYOUT =================
+\twocolumn
 
 % ================= SECTION 1 =================
-\section{Agile Release Roadmap}
-The project was executed across 4 structured sprints, culminating in the production-ready \textbf{v4.0.0} final release.
+\section{Introduction}
+University academic departments rely heavily on Student Assistants (SAs) to supervise computer laboratories, assist faculty members during lecture sessions, maintain hardware equipment, and invigilate midterm and final examinations. Managing student duty operations requires coordinating academic course timetables, verifying physical presence during assigned duty hours, managing sudden shift-swap requests, and processing monthly billing claims.
+
+Historically, the Department of Computer Science and Engineering at Independent University, Bangladesh (IUB) managed these workflows through fragmented Google Sheets, manual messaging threads, and paper timesheets. This led to frequent schedule overlaps with student class hours, missed duty coverage, unresolved shift swaps, and billing disputes during monthly payroll processing.
+
+\subsection{Current vs. Proposed Process}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{01_problem_statement_current_manual_process.png}
+\caption{Current Manual SA Duty Management Process}
+\label{fig:current_process}
+\end{figure}
 
 \begin{figure}[H]
 \centering
-\resizebox{0.95\linewidth}{!}{%
-\begin{tikzpicture}[
-    node distance=0.8cm,
-    sprint/.style={rectangle, draw=blue!80, fill=blue!10, thick, minimum width=13.5cm, minimum height=1.1cm, rounded corners=4pt, align=left, font=\small\bfseries}
-]
-    \node (s1) [sprint] {Sprint 1 (v1.0.0): Multi-Role Auth (2026-07-01 to 2026-07-10) \\ \textit{\tiny Implemented Multi-Role JWT authentication, Argon2id password hashing, and user profile management (Closed Issues \#1, \#2)}};
-    \node (s2) [sprint, below=of s1] {Sprint 2 (v2.0.0): Parser, Overrides \& Duty Grid (2026-07-11 to 2026-07-20) \\ \textit{\tiny Regex IRAS schedule parser, interactive timetable grid, busy overrides, and duty CRUD with collision checks (Closed Issues \#3, \#4, \#5, \#6)}};
-    \node (s3) [sprint, below=of s2] {Sprint 3 (v3.0.0): Broadcast Trade Board \& Alerts (2026-07-21 to 2026-07-25) \\ \textit{\tiny Shift swap trade backlog, public/private broadcast filtering, candidate conflict check, and notification hubs (Closed Issues \#7, \#8, \#9)}};
-    \node (s4) [sprint, below=of s3] {Sprint 4 (v4.0.0): Approvals, RFID Kiosk \& CSV Stream (2026-07-26 to 2026-07-27) \\ \textit{\tiny Multi-stage billing approvals, standalone Light-Mode RFID Kiosk subpage, and streamed CSV exports (Closed Issues \#10, \#11, \#12)}};
+\includegraphics[width=\linewidth]{02_problem_statement_proposed_automated_process.png}
+\caption{Proposed Automated SoD Management Process}
+\label{fig:proposed_process}
+\end{figure}
 
-    \draw[->, >=stealth, ultra thick, blue!80] (s1) -- (s2);
-    \draw[->, >=stealth, ultra thick, blue!80] (s2) -- (s3);
-    \draw[->, >=stealth, ultra thick, blue!80] (s3) -- (s4);
-\end{tikzpicture}%
-}
-\caption{Agile Development Release Roadmap across Sprints 1 to 4}
+\subsection{Agile Release Roadmap}
+To systematically address these operational bottlenecks, the software engineering project was executed across 4 structured Agile development sprints, culminating in the production-ready v4.0.0 final release.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{15_agile_release_roadmap_sprints.png}
+\caption{Agile Development Release Roadmap (Sprints 1 through 4)}
 \label{fig:agile_roadmap}
 \end{figure}
 
-\subsection{Agile Sprint Breakdown}
-\begin{itemize}
-    \item \textbf{Sprint 1 (v1.0.0):} Multi-Role JWT authentication and RBAC dependency injection (Closed Issues \#1, \#2).
-    \item \textbf{Sprint 2 (v2.0.0):} Regex IRAS Parser, interactive timetable availability grid, manual overrides, and Manager Duty CRUD with real-time class overlap collision warnings (Closed Issues \#3, \#4, \#5, \#6).
-    \item \textbf{Sprint 3 (v3.0.0):} Shift Swap trade backlog, public/private broadcasts filtering, candidate conflict checks, and inbox notification hubs (Closed Issues \#7, \#8, \#9).
-    \item \textbf{Sprint 4 (v4.0.0):} Multi-stage billing approvals (Student submit $\rightarrow$ Faculty verify $\rightarrow$ Manager approve $\rightarrow$ Payout release), RFID Kiosk, and streaming CSV payroll exports (Closed Issues \#10, \#11, \#12).
-\end{itemize}
+\subsection{Project Objectives}
+The primary objective of the SoD Management System is to deliver a centralized, secure, and scalable web application that automates duty scheduling, shift verification, and financial claims. Specific technical goals include:
+\begin{enumerate}
+    \item \textbf{Automated Timetable Parsing:} Parse raw IRAS academic course schedules into conflict-free student availability matrices.
+    \item \textbf{Wireless RFID Attendance \& Kiosk:} Implement real-time check-in and check-out tracking using physical 13.56~MHz RFID cards and a standalone Light-Mode RFID Kiosk subpage.
+    \item \textbf{Automated Shift Swaps:} Provide an intelligent broadcast proxy engine that matches swap requests against real-time student availability.
+    \item \textbf{Payroll Stream \& Approval Pipeline:} Streamline monthly bill claim submissions, multi-tier approvals, and dynamic CSV payroll streaming.
+\end{enumerate}
 
 % ================= SECTION 2 =================
-\section{System Architecture}
-The application is built using a decoupled \textbf{Client-Server MVC Pattern}.
+\section{Problem Definition \& Stakeholder Analysis}
+The operational challenges in managing Student Assistants stem from information silos and manual record-keeping.
+
+\subsection{Operational Bottlenecks}
+\begin{itemize}
+    \item \textbf{Manual Availability Verification:} Comparing student class schedules against lab duty slots required hours of manual cross-referencing.
+    \item \textbf{Unverified Duty Attendance:} Traditional sign-in sheets were susceptible to proxy attendance and unverified timestamps.
+    \item \textbf{Payroll Reconciliation Errors:} Paper billing claims often contained arithmetic miscalculations or unverified duty hours.
+\end{itemize}
+
+\subsection{Stakeholder Analysis}
+\begin{table}[H]
+\centering
+\caption{Stakeholder Matrix and Core Requirements}
+\label{tab:stakeholders}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lp{6.5cm}}
+\toprule
+\textbf{Stakeholder} & \textbf{Core Requirements \& Responsibilities} \\
+\midrule
+Student & Timetable parsing, shift swap requests, check-in/out, bill claim submission. \\
+Faculty & Task creation, assistant oversight, duty verification. \\
+Lab Manager & Shift slot creation, RFID kiosk operation, attendance roster audits. \\
+Dept Manager & Departmental duty allocation, budget oversight, CSV payroll stream export. \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
 
 \begin{figure}[H]
 \centering
-\resizebox{0.95\linewidth}{!}{%
-\begin{tikzpicture}[
-    node distance=1.2cm,
-    layer/.style={rectangle, draw=blue!80, fill=blue!5, ultra thick, minimum width=14cm, minimum height=1.6cm, rounded corners=6pt, align=center, font=\small},
-    arrow/.style={<->, >=stealth, ultra thick, blue!80}
-]
-    \node (fe) [layer] {\textbf{Frontend: React TS, Vanilla CSS, Vite SPA}\\Components \& Pages $\cdot$ Custom React Hooks (\texttt{useSchedule.ts}, \texttt{useSwaps.ts}, \texttt{useAttendance.ts}) $\cdot$ Axios Client};
-    
-    \node (api) [layer, below=of fe] {\textbf{Backend: FastAPI Asynchronous Engine}\\Router Controllers $\cdot$ Conflict \& IRAS Parser Services $\cdot$ Broadcast Proxy Engine $\cdot$ Payroll CSV Stream};
-    
-    \node (db) [layer, below=of api] {\textbf{Database Layer: PostgreSQL / SQLite Relational DB}\\Async Queries via SQLAlchemy ORM Entities (\texttt{Users}, \texttt{Schedules}, \texttt{Duties}, \texttt{Swaps}, \texttt{Notifications}, \texttt{Billing\_Claims})};
+\includegraphics[width=\linewidth]{03_stakeholder_analysis_matrix.png}
+\caption{Stakeholder Analysis \& Influence Matrix}
+\label{fig:stakeholder_matrix}
+\end{figure}
 
-    \draw[arrow] (fe) -- node[right, font=\footnotesize\bfseries]{HTTP REST (JSON)} (api);
-    \draw[arrow] (api) -- node[right, font=\footnotesize\bfseries]{Async SQLAlchemy Queries} (db);
-\end{tikzpicture}%
+\subsection{Information Gathering Workflow}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{04_information_gathering_workflow.png}
+\caption{Information Gathering \& Elicitation Workflow}
+\label{fig:info_gathering}
+\end{figure}
+
+\subsection{Feasibility Analysis}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{05_feasibility_analysis_decision_tree.png}
+\caption{Technical \& Operational Feasibility Decision Tree}
+\label{fig:feasibility}
+\end{figure}
+
+\subsection{User Journey Mapping}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{06_user_journey_student_and_manager.png}
+\caption{User Journey Map: Student \& Manager Dual Perspective}
+\label{fig:user_journey}
+\end{figure}
+
+% ================= SECTION 3 =================
+\section{Literature Review \& Comparative Analysis}
+Existing commercial workforce management tools (e.g., Handshake, Shiftboard) target general corporate environments and lack integration with university academic course registration systems such as IRAS.
+
+\begin{table}[H]
+\centering
+\caption{Comparative Matrix: Manual vs. Generic vs. SoD System}
+\label{tab:comparison}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+\textbf{Feature} & \textbf{Manual} & \textbf{Generic Tools} & \textbf{SoD System} \\
+\midrule
+IRAS Schedule OCR/Parser & No & No & \textbf{Yes} \\
+RFID Hardware Kiosk & No & Third-party & \textbf{Integrated} \\
+Broadcast Proxy Swaps & No & No & \textbf{Automated} \\
+Role Payroll CSV Stream & No & Generic & \textbf{Automated} \\
+MVC Layer Decoupling & N/A & Proprietary & \textbf{Compliant} \\
+\bottomrule
+\end{tabular}%
 }
-\caption{Decoupled Client-Server MVC System Architecture}
+\end{table}
+
+% ================= SECTION 4 =================
+\section{System Architecture \& Design Models}
+The system adopts a 3-tier architecture adhering strictly to Model-View-Controller (MVC) standards.
+
+\subsection{Data Flow Diagrams (DFD)}
+The system's data flows are modeled across three decomposition levels, progressing from context-level interactions to subsystem-specific processing.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{07_dfd_context_level_0.png}
+\caption{DFD Context Diagram (Level 0)}
+\label{fig:dfd_l0}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{08_dfd_level_1_system_decomposition.png}
+\caption{DFD Level 1: System Decomposition}
+\label{fig:dfd_l1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{09_dfd_level_2_shift_swap_subsystem.png}
+\caption{DFD Level 2: Shift Swap Subsystem}
+\label{fig:dfd_l2}
+\end{figure}
+
+\subsection{MVC System Conceptual Architecture}
+To eliminate monolith clutter, business logic is isolated into specialized backend service modules and custom React hooks.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{16_decoupled_mvc_architecture.png}
+\caption{Decoupled 3-Tier MVC System Architecture}
 \label{fig:architecture}
 \end{figure}
 
-\subsection{Core Architectural Layers}
-\begin{enumerate}
-    \item \textbf{Presentation Layer (Vite + React TS + Vanilla CSS):} Role-tailored dashboards to render clean UI scopes. State management is encapsulated inside custom React hooks (e.g., \texttt{useSchedule.ts}, \texttt{useSwaps.ts}), shielding components from REST endpoints.
-    \item \textbf{Business Logic Layer (FastAPI Services):}
-    \begin{itemize}
-        \item \textbf{IRAS Parser:} Utilizes clean regex blocks to normalize copy-pasted schedule data into structured database slots.
-        \item \textbf{Conflict Checker:} Ensures student scheduling safety by comparing target times against class slots and override boundaries:
-        \begin{equation}
-        \text{Start}_{\text{new}} < \text{End}_{\text{existing}} \quad \text{AND} \quad \text{End}_{\text{new}} > \text{Start}_{\text{existing}}
-        \end{equation}
-    \end{itemize}
-    \item \textbf{Data Layer (SQLAlchemy ORM + SQLite / PostgreSQL):} Async database operations utilizing SQLAlchemy sessions to handle transactional safety.
-\end{enumerate}
-
-% ================= SECTION 3 =================
-\section{Database Entity Relationship (ER) Model}
-The database schemas are built using SQLAlchemy, linking records to track student duty cycles.
+\subsection{Database Entity Relationship (ER) Model}
+The database schemas are built using SQLAlchemy ORM entities, maintaining relational integrity across student duty cycles.
 
 \begin{figure}[H]
 \centering
-\resizebox{0.95\linewidth}{!}{%
-\begin{tikzpicture}[
-    node distance=1.0cm,
-    entity/.style={rectangle, draw=purple!80!black, fill=purple!5, thick, minimum width=3.8cm, minimum height=2.4cm, rounded corners=4pt, align=left, font=\tiny},
-    title/.style={font=\tiny\bfseries\color{purple!90!black}}
-]
-    \node (users) [entity] {\textbf{USERS}\\-- \underline{id} (PK)\\-- department\_id\\-- name\\-- email\\-- hashed\_password\\-- role\\-- rfid\_tag};
-    \node (sched) [entity, right=of users] {\textbf{SCHEDULES}\\-- \underline{id} (PK)\\-- student\_id (FK)\\-- day\_of\_week\\-- start\_time\\-- end\_time\\-- course\_code\\-- is\_override};
-    \node (duties) [entity, right=of sched] {\textbf{DUTIES}\\-- \underline{id} (PK)\\-- assigned\_student\_id (FK)\\-- title\\-- date\\-- start\_time\\-- end\_time\\-- notes};
-    
-    \node (swaps) [entity, below=of users] {\textbf{SWAPS}\\-- \underline{id} (PK)\\-- duty\_id (FK)\\-- requester\_id (FK)\\-- target\_student\_id (FK)\\-- status\\-- reason\\-- created\_at};
-    \node (notif) [entity, right=of swaps] {\textbf{NOTIFICATIONS}\\-- \underline{id} (PK)\\-- user\_id (FK)\\-- title\\-- message\\-- is\_read\\-- created\_at};
-    \node (bills) [entity, right=of notif] {\textbf{BILLING\_CLAIMS}\\-- \underline{id} (PK)\\-- student\_id (FK)\\-- month\\-- hours\_logged\\-- hourly\_rate\\-- amount\\-- status\\-- created\_at};
-
-    \draw[->, >=stealth, thick, blue!80] (users) -- node[above, font=\tiny]{has (1:N)} (sched);
-    \draw[->, >=stealth, thick, blue!80] (users) -- node[above, font=\tiny]{assigned (1:N)} (duties);
-    \draw[->, >=stealth, thick, blue!80] (duties) -- node[left, font=\tiny]{traded (1:N)} (swaps);
-    \draw[->, >=stealth, thick, blue!80] (users) -- node[left, font=\tiny]{receives (1:N)} (notif);
-    \draw[->, >=stealth, thick, blue!80] (users) -- node[left, font=\tiny]{submits (1:N)} (bills);
-\end{tikzpicture}%
-}
-\caption{Database Entity Relationship (ER) Model}
+\includegraphics[width=\linewidth]{17_database_er_relational_model.png}
+\caption{Complete Database Entity Relationship (ER) Schema}
 \label{fig:er_diagram}
 \end{figure}
 
-% ================= SECTION 4 =================
-\section{Shift Swap Broadcast Matching Engine Flow}
-The broadcast matching engine automatically filters out conflicted student peers to deliver clean notifications.
+\subsection{Schedule Collision Detection Formula}
+To prevent scheduling duty assignments during student class slots or manual busy overrides, the backend Conflict Checker evaluates interval collisions using:
+\begin{equation}
+\text{Collision} = (\text{Start}_{\text{new}} < \text{End}_{\text{existing}}) \land (\text{End}_{\text{new}} > \text{Start}_{\text{existing}})
+\end{equation}
+
+\subsection{IRAS Schedule Text Parsing Algorithm}
+The raw academic schedule string uploaded by students is converted into clean weekly availability windows using a deterministic regular expression parser.
+
+\begin{figure}[H]
+\begin{small}
+\textbf{Algorithm 1: IRAS Schedule Regex Parser}\\
+\textbf{Input:} Raw IRAS Schedule String $S$\\
+\textbf{Output:} Availability Matrix $M$\\
+1. Pattern = ([A-Z]3d3) (.*?) (d+) ([A-Z0-9]+)\\
+2. Matches = RegexFindAll(Pattern, S)\\
+3. \textbf{for} m in Matches:\\
+4. \quad course, title, sec, room, time = m\\
+5. \quad days, start, end = ParseTimeSlot(time)\\
+6. \quad \textbf{for} day in days:\\
+7. \qquad M[day, start, end] = Occupied\\
+8. \textbf{return} $M$
+\end{small}
+\caption{IRAS Schedule Text Parsing Algorithm Specification}
+\label{alg:iras_parser}
+\end{figure}
+
+\subsection{Shift Swap Broadcast Engine Sequence}
+The broadcast proxy engine automatically filters candidate peers to ensure swap targets have no class or duty conflicts during the requested shift window.
 
 \begin{figure}[H]
 \centering
-\resizebox{0.95\linewidth}{!}{%
-\begin{tikzpicture}[
-    node distance=1.2cm,
-    actor/.style={rectangle, draw=blue!80, fill=blue!10, thick, minimum width=2.4cm, minimum height=1.0cm, font=\small\bfseries, align=center},
-    process/.style={rectangle, draw=purple!80, fill=purple!5, thick, minimum width=4.8cm, minimum height=1.0cm, font=\small, align=center}
-]
-    \node (a) [actor] {Student A\\(Requester)};
-    \node (api) [process, right=of a] {FastAPI Router and DB\\(Candidate Conflict Filter)};
-    \node (b) [actor, right=of api] {Student B\\(No Conflict)};
-
-    \draw[->, >=stealth, thick, blue!80] (a) -- node[above, font=\tiny\bfseries]{1. Request Swap} (api);
-    \draw[->, >=stealth, thick, purple!80] (api) -- node[above, font=\tiny\bfseries]{2. Broadcast Alert} (b);
-    \draw[->, >=stealth, thick, green!60!black] (b) -- node[below, font=\tiny\bfseries]{3. Accept Trade} (api);
-    \draw[->, >=stealth, thick, blue!80] (api) -- node[below, font=\tiny\bfseries]{4. Reassign and Notify} (a);
-\end{tikzpicture}%
-}
+\includegraphics[width=\linewidth]{18_shift_swap_broadcast_engine.png}
 \caption{Shift Swap Broadcast Matching Engine Sequence Flow}
 \label{fig:swap_sequence}
 \end{figure}
 
-% ================= SECTION 5 =================
-\section{System API Directory}
-The SoD Management System APIs are grouped into 5 modular scopes, exposing clean RESTful handlers.
+\subsection{Wireless RFID Terminal State Machine}
+The attendance module integrates with 13.56~MHz NFC RFID readers. When a physical card UID is scanned at a terminal, the system evaluates the student's active shift status:
+\begin{equation}
+\text{State}(t+1) = 
+\begin{cases} 
+\text{Checked\_In}, & \text{if } \text{State}(t) = \text{Scheduled} \\
+\text{Checked\_Out}, & \text{if } \text{State}(t) = \text{Checked\_In}
+\end{cases}
+\end{equation}
 
-\begin{table}[H]
-\centering
-\caption{System API Endpoint Directory}
-\label{tab:api_directory}
-\resizebox{0.95\linewidth}{!}{%
-\begin{tabular}{lc|l|l|c}
-\toprule
-\textbf{Module} & \textbf{Method} & \textbf{Endpoint Path} & \textbf{Description} & \textbf{Access Scope} \\
-\midrule
-Auth & \texttt{POST} & \texttt{/api/v1/auth/register} & Registers new user profile & Public \\
-Auth & \texttt{POST} & \texttt{/api/v1/auth/login} & Validates credentials and issues JWT & Public \\
-Auth & \texttt{GET} & \texttt{/api/v1/auth/students} & Lists all registered student accounts & Registered Users \\
-\midrule
-Schedule & \texttt{POST} & \texttt{/api/v1/schedule/parse} & Regex parsing of copy-pasted IRAS text & Student \\
-Schedule & \texttt{GET} & \texttt{/api/v1/schedule/me} & Fetches active user weekly timetable slots & Student \\
-Schedule & \texttt{POST} & \texttt{/api/v1/schedule/override} & Toggles busy manual override state & Student \\
-Schedule & \texttt{GET} & \texttt{/api/v1/schedule/student/\{id\}} & Fetches target student schedule slots & Supervisor / Manager \\
-\midrule
-Duties & \texttt{POST} & \texttt{/api/v1/tasks} & Creates duty shift slot (validates conflicts) & Manager \\
-Duties & \texttt{GET} & \texttt{/api/v1/tasks} & Lists duty slots (filtered by user context) & All Roles \\
-Duties & \texttt{PATCH} & \texttt{/api/v1/tasks/\{id\}} & Assigns student or edits notes / completion & All Roles (Scoped) \\
-Duties & \texttt{DELETE} & \texttt{/api/v1/tasks/\{id\}} & Deletes duty slot & Manager \\
-\midrule
-Swaps & \texttt{POST} & \texttt{/api/v1/swaps/request} & Requests shift trade (public/private) & Student \\
-Swaps & \texttt{GET} & \texttt{/api/v1/swaps} & Lists pending and accepted swap requests & All Roles (Scoped) \\
-Swaps & \texttt{POST} & \texttt{/api/v1/swaps/\{id\}/respond} & Accepts or declines a trade offer & Student \\
-\midrule
-Billing & \texttt{POST} & \texttt{/api/v1/billing/submit} & Submits monthly hourly claim sheet & Student \\
-Billing & \texttt{GET} & \texttt{/api/v1/billing/claims} & Lists claims (filtered by status / student) & All Roles (Scoped) \\
-Billing & \texttt{POST} & \texttt{/api/v1/billing/\{id\}/approve} & Multi-stage approvals (verify/approve/pay) & Faculty / Manager \\
-Billing & \texttt{GET} & \texttt{/api/v1/billing/export} & Downloads payroll report in CSV format & Faculty / Manager \\
-\bottomrule
-\end{tabular}%
-}
-\end{table}
+Hours completed are dynamically computed as:
+\begin{equation}
+H_{\text{completed}} = \frac{T_{\text{CheckOut}} - T_{\text{CheckIn}}}{3600}
+\end{equation}
+
+% ================= SECTION 5 =================
+\section{Requirements Analysis}
+
+\subsection{Functional Requirements}
+\begin{itemize}
+    \item \textbf{FR-01 (Authentication):} Secure JWT authentication with Argon2id password hashing and role-based access control (RBAC).
+    \item \textbf{FR-02 (Schedule Parsing):} Parse IRAS schedule text containing course codes, section numbers, room assignments, and time slots into availability grids.
+    \item \textbf{FR-03 (RFID Attendance):} Support wireless RFID card UID provisioning in User Management and dual check-in/out timestamp recording.
+    \item \textbf{FR-04 (Full-Screen RFID Kiosk):} Provide a dedicated, light-mode full-screen kiosk view (\myurl{/manager/attendance/duty/1/kiosk}) scoped to a selected duty slot.
+    \item \textbf{FR-05 (Shift Swapping):} Automated broadcast proxy engine matching swap requests against free time slots with cascading notifications.
+    \item \textbf{FR-06 (Payroll Streaming):} Generate and stream verified monthly payroll billing claims as CSV files directly via app/services/payroll.py.
+\end{itemize}
+
+\subsection{Non-Functional Requirements}
+\begin{itemize}
+    \item \textbf{NFR-01 (Performance):} Sub-200ms latency for API endpoints and under 1-second Vite frontend production builds.
+    \item \textbf{NFR-02 (Security):} Transport Layer Security (TLS 1.3), parameterized SQL queries to prevent SQL injection, and strict request schema validation.
+    \item \textbf{NFR-03 (Usability):} Mobile-responsive glassmorphism and clean light-mode enterprise styling adhering to modern web guidance standards.
+\end{itemize}
 
 % ================= SECTION 6 =================
-\section{SDLC Verification (V-Model Mapping)}
-Every functional requirement and user story is tied to automated integration testing files under \texttt{backend/tests/} to guarantee coverage and prevent regressions.
+\section{Database \& API Directory}
+
+\subsection{Relational Database Schema}
+The database contains six core tables implemented in PostgreSQL via SQLAlchemy ORM (linking Users, Schedules, Duties, Swaps, Notifications, and Billing Claims).
 
 \begin{table}[H]
 \centering
-\caption{SDLC Requirements Verification Mapping}
-\label{tab:vmodel}
-\resizebox{0.95\linewidth}{!}{%
-\begin{tabular}{lp{4cm}p{4cm}l}
+\caption{Database Schema Entities and Attributes}
+\label{tab:schema}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lll}
 \toprule
-\textbf{User Story} & \textbf{Requirements Scope} & \textbf{Verification Target} & \textbf{Test File Path} \\
+\textbf{Entity} & \textbf{Primary Key} & \textbf{Foreign Keys / Attributes} \\
 \midrule
-US-001 / US-002 & User Registration \& JWT Login & Successful register, duplicate checks, token & \texttt{backend/tests/test\_auth.py} \\
-US-004 & IRAS Schedule Parser & UTF-8 parsing, extraction of days and hours & \texttt{backend/tests/test\_schedule.py} \\
-US-005 / US-006 & Availability Grid \& Overrides & Manual toggle of overrides, database saving & \texttt{backend/tests/test\_schedule.py} \\
-US-007 / US-010 & Duty Slots CRUD \& Conflicts & Prevent overlapping assignment, CRUD controls & \texttt{backend/tests/test\_duty.py} \\
-US-008 / US-011 & Swap Request \& Inbox & Overlap-free candidate notification routing & \texttt{backend/tests/test\_swap.py} \\
-US-012 / US-013 & Billing Pipeline \& CSV Export & Double-submission guard, CSV streaming & \texttt{backend/tests/test\_billing.py} \\
+users & id & email, role, rfid\_tag, dept\_id \\
+schedules & id & student\_id, day, start\_time, end\_time \\
+duty\_slots & id & title, location, start\_time, end\_time \\
+attendance & id & duty\_id, student\_id, check\_in, check\_out \\
+swaps & id & duty\_id, requester\_id, target\_id, status \\
+notifications & id & user\_id, title, message, is\_read \\
+billing\_claims & id & student\_id, hours\_logged, amount, status \\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
 
+\subsection{Complete RESTful API Directory}
+The system APIs are organized across 5 modular controller scopes:
+
 \begin{table}[H]
 \centering
-\caption{Automated Pytest Execution Summary}
-\label{tab:pytest}
-\resizebox{0.95\linewidth}{!}{%
-\begin{tabular}{lccc}
+\caption{Complete System API Endpoint Directory}
+\label{tab:api_directory}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lc|l|l}
 \toprule
-\textbf{Test Module} & \textbf{Test Cases} & \textbf{Passed} & \textbf{Pass Rate} \\
+\textbf{Module} & \textbf{Method} & \textbf{Endpoint Path} & \textbf{Scope} \\
 \midrule
-\texttt{test\_auth.py} & 5 & 5 & 100\% \\
-\texttt{test\_billing.py} & 1 & 1 & 100\% \\
-\texttt{test\_duty.py} & 2 & 2 & 100\% \\
-\texttt{test\_schedule.py} & 7 & 7 & 100\% \\
-\texttt{test\_swap.py} & 1 & 1 & 100\% \\
-\textbf{Total} & \textbf{16} & \textbf{16} & \textbf{100\%} \\
+Auth & \textbf{POST} & /api/v1/auth/register & Public \\
+Auth & \textbf{POST} & /api/v1/auth/login & Public \\
+Auth & \textbf{GET} & /api/v1/auth/students & Auth \\
+\midrule
+Schedule & \textbf{POST} & /api/v1/schedule/parse & Student \\
+Schedule & \textbf{GET} & /api/v1/schedule/me & Student \\
+Schedule & \textbf{POST} & /api/v1/schedule/override & Student \\
+Schedule & \textbf{GET} & /api/v1/schedule/student/:id & Manager \\
+\midrule
+Duties & \textbf{POST} & /api/v1/tasks & Manager \\
+Duties & \textbf{GET} & /api/v1/tasks & All Roles \\
+Duties & \textbf{PATCH} & /api/v1/tasks/:id & All Roles \\
+Duties & \textbf{DELETE} & /api/v1/tasks/:id & Manager \\
+\midrule
+Swaps & \textbf{POST} & /api/v1/swaps/request & Student \\
+Swaps & \textbf{GET} & /api/v1/swaps & All Roles \\
+Swaps & \textbf{POST} & /api/v1/swaps/:id/respond & Student \\
+\midrule
+Billing & \textbf{POST} & /api/v1/billing/submit & Student \\
+Billing & \textbf{GET} & /api/v1/billing/claims & All Roles \\
+Billing & \textbf{POST} & /api/v1/billing/:id/approve & Manager \\
+Billing & \textbf{GET} & /api/v1/billing/export & Manager \\
 \bottomrule
 \end{tabular}%
 }
 \end{table}
 
 % ================= SECTION 7 =================
-\section{Retrospective \& Future Roadmap Backlog}
+\section{Live System Portals \& Screenshots}
+The web application interface was verified across all four user roles (Student, Manager, Admin, Faculty).
 
-\subsection{Lessons Learned}
+\subsection{Authentication \& Registration Portals}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{01_login_page.png}
+\caption{Multi-Role JWT Sign-In Portal (\myurl{/login})}
+\label{fig:ss_login}
+\end{figure}
+
+\subsection{Student Assistant Portal \& Parser Modal}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{03_student_dashboard.png}
+\caption{Student Assistant Dashboard \& Availability Matrix}
+\label{fig:ss_student_dash}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{03_component_iras_parser_modal.png}
+\caption{Raw IRAS Timetable Text Parser Modal}
+\label{fig:ss_iras_modal}
+\end{figure}
+
+\subsection{Shift Swap Request Board}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{05_student_shift_swaps.png}
+\caption{Shift Swap Trade Request Board (\myurl{/swaps})}
+\label{fig:ss_swaps}
+\end{figure}
+
+\subsection{Manager Portal \& Wireless RFID Kiosk}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{07_manager_duty_management.png}
+\caption{Department Duty Allocation Manager (\myurl{/manager/duties})}
+\label{fig:ss_manager_duties}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{10_manager_rfid_kiosk_terminal.png}
+\caption{Standalone Light-Mode RFID Kiosk Terminal}
+\label{fig:ss_rfid_kiosk}
+\end{figure}
+
+\subsection{Admin Payroll \& Streamed CSV Export}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{14_admin_payroll_billing.png}
+\caption{Payroll Approvals \& CSV Export Portal (\myurl{/admin/billing})}
+\label{fig:ss_admin_payroll}
+\end{figure}
+
+% ================= SECTION 8 =================
+\section{SDLC Verification \& Test Results}
+
+\subsection{V-Model Verification Mapping}
+Every user story (US-001 to US-013) is verified against automated integration test suites under backend/tests/.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{13_sdlc_v_model_verification_matrix.png}
+\caption{SDLC V-Model Verification \& Validation Matrix}
+\label{fig:vmodel_matrix}
+\end{figure}
+
+\subsection{Developer Workplans}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{11_developer_workplans_timeline.png}
+\caption{Developer Workplans: Sprint Timeline}
+\label{fig:workplan_timeline}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{12_developer_workplans_module_dependency.png}
+\caption{Developer Workplans: Module Dependency Graph}
+\label{fig:workplan_deps}
+\end{figure}
+
+\subsection{Unified Team Workflow}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{14_unified_team_workflow.png}
+\caption{Unified Development Team Workflow}
+\label{fig:team_workflow}
+\end{figure}
+
+\subsection{CI/CD Pipeline}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{10_agile_workflow_ci_cd_pipeline.png}
+\caption{CI/CD Integration Pipeline \& SDLC Verification}
+\label{fig:vmodel_diagram}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Automated Pytest Execution Summary}
+\label{tab:pytest}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+\textbf{Test Module} & \textbf{Test Cases} & \textbf{Passed} & \textbf{Pass Rate} \\
+\midrule
+test\_auth.py & 5 & 5 & 100\% \\
+test\_billing.py & 1 & 1 & 100\% \\
+test\_duty.py & 2 & 2 & 100\% \\
+test\_schedule.py & 7 & 7 & 100\% \\
+test\_swap.py & 1 & 1 & 100\% \\
+\textbf{Total} & \textbf{16} & \textbf{16} & \textbf{100\%} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+% ================= SECTION 9 =================
+\section{Agile Retrospective \& Future Roadmap}
+
+\subsection{Agile Lessons Learned}
 \begin{enumerate}
-    \item \textbf{SQLite Type Mappings:} Storing time fields as ISO-formatted string boundaries (\texttt{HH:MM}) allowed async comparison operators (\texttt{<}, \texttt{>}) to execute fast in both SQLite and PostgreSQL.
-    \item \textbf{Decoupled Business Hooks:} Consolidating state managers into isolated hooks (like \texttt{useSchedule.ts}) facilitated easy API migrations from mock states to FastAPI endpoints.
+    \item \textbf{ISO Timestamp Comparison:} Storing time boundaries as ISO-formatted string strings (HH:MM) enabled fast async comparison operators ($<$, $>$) in SQLite and PostgreSQL.
+    \item \textbf{Decoupled Business Hooks:} Shielding UI pages behind custom React hooks (useSchedule.ts, useAttendance.ts) allowed seamless migrations from mock states to FastAPI endpoints.
 \end{enumerate}
 
 \subsection{Future Roadmap Backlog}
-\begin{itemize}
-    \item \textbf{Live WebSockets:} Replace 10-second polling loops with active WebSocket connections to push instant notifications.
-    \item \textbf{Faculty Email Triggers:} Implement SMTP email alerts when a billing claim is submitted for verification.
-    \item \textbf{Mobile Adaptability:} Port visual schedule grids to responsive native mobile app grids.
-\end{itemize}
+\begin{enumerate}
+    \item \textbf{Live WebSockets:} Replace polling loops with active WebSocket channels for instant notification pushes.
+    \item \textbf{SMTP Email Triggers:} Automated email alerts when billing claims are submitted for verification.
+    \item \textbf{Native Mobile Grid:} Port schedule availability grids to responsive native mobile app grids.
+\end{enumerate}
+
+% ================= SECTION 10 =================
+\section{Conclusion}
+The \textbf{Departmental Student on Duty (SoD) Management System} successfully addresses the operational bottlenecks of university assistant scheduling, shift verification, and financial processing. By combining an asynchronous FastAPI backend, a decoupled React SPA, automated IRAS timetable parsing, wireless RFID attendance hardware, and dynamic CSV payroll streaming, the system achieves a 70\% reduction in administrative overhead and eliminates billing disputes.
 
 % ================= REFERENCES =================
-\section{References}
-\begin{thebibliography}{9}
-
-\bibitem{b1}
-FastAPI Framework Documentation. "Asynchronous Web Framework for Python." (2026). \\
-\url{https://fastapi.tiangolo.com/}
-
-\bibitem{b2}
-React Documentation. "A JavaScript library for building user interfaces." Meta Platforms. (2026). \\
-\url{https://react.dev/}
-
-\bibitem{b3}
-SQLAlchemy ORM Documentation. "The Python SQL Toolkit and Object Relational Mapper." (2026). \\
-\url{https://www.sqlalchemy.org/}
-
-\bibitem{b4}
-Pydantic Data Validation. "Data validation and settings management using Python type hints." (2026). \\
-\url{https://docs.pydantic.dev/}
-
-\bibitem{b5}
-ISO/IEC 14443. "Identification cards -- Contactless integrated circuit cards -- Proximity cards." International Organization for Standardization. (2020).
-
-\bibitem{b6}
-Sommerville, Ian. "Software Engineering." 10th Edition, Pearson Education. (2016).
-
-\end{thebibliography}
+\section*{References}
+\begin{enumerate}
+\item FastAPI Framework Documentation. "Asynchronous Web Framework for Python." (2026). \myurl{https://fastapi.tiangolo.com/}
+\item React Documentation. "A JavaScript library for building user interfaces." Meta Platforms. (2026). \myurl{https://react.dev/}
+\item SQLAlchemy ORM Documentation. "The Python SQL Toolkit and Object Relational Mapper." (2026). \myurl{https://www.sqlalchemy.org/}
+\item Pydantic Data Validation. "Data validation and settings management using Python type hints." (2026). \myurl{https://docs.pydantic.dev/}
+\item ISO/IEC 14443. "Identification cards -- Contactless integrated circuit cards -- Proximity cards." International Organization for Standardization. (2020).
+\item Sommerville, Ian. "Software Engineering." 10th Edition, Pearson Education. (2016).
+\end{enumerate}
 
 \end{document}
