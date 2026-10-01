@@ -1,20 +1,28 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../services/useAuth';
 import { useBilling } from '../services/useBilling';
 import { useSemesters } from '../context/SemesterContext';
 import { BillApprovalList } from '../component/Billing/BillApprovalList';
-import { FileSpreadsheet, CheckCircle2, ShieldCheck, Filter } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle2, ShieldCheck, Filter, Archive } from 'lucide-react';
 
 export const AdminBilling: React.FC = () => {
   const { user } = useAuth();
   const { semesters, activeSemester } = useSemesters();
-  const [selectedSemester, setSelectedSemester] = useState<string>('');
+  const [searchParams] = useSearchParams();
+  const urlSemester = searchParams.get('semester');
+
+  const [selectedSemester, setSelectedSemester] = useState<string>(urlSemester || '');
 
   useEffect(() => {
-    if (activeSemester && !selectedSemester) {
+    if (urlSemester) {
+      setSelectedSemester(urlSemester);
+    } else if (activeSemester && !selectedSemester) {
       setSelectedSemester(activeSemester.name);
+    } else if (!selectedSemester && semesters.length > 0) {
+      setSelectedSemester(semesters[0].name);
     }
-  }, [activeSemester, selectedSemester]);
+  }, [urlSemester, activeSemester, selectedSemester, semesters]);
 
   const { bills, verifyByFaculty, approveByManager, disputeBill, exportPayrollCsv, refreshClaims } = useBilling();
 
@@ -25,6 +33,10 @@ export const AdminBilling: React.FC = () => {
   }, [selectedSemester, refreshClaims]);
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const selectedSemObj = semesters.find((s) => s.name === selectedSemester);
+  const isArchived = Boolean(selectedSemObj?.is_archived);
+  const isDeptManager = user?.role === 'DeptManager';
 
   const totalSubmitted = bills.filter((b) => b.state === 'Submitted').length;
   const totalVerified = bills.filter((b) => b.state === 'Faculty_Verified').length;
@@ -88,7 +100,7 @@ export const AdminBilling: React.FC = () => {
               >
                 {semesters.map((sem) => (
                   <option key={sem.id} value={sem.name}>
-                    {sem.name} {sem.is_active ? '(Active)' : ''}
+                    {sem.name} {sem.is_archived ? '(Archived)' : sem.is_active ? '★ (Active)' : ''}
                   </option>
                 ))}
               </select>
@@ -110,6 +122,22 @@ export const AdminBilling: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* Historical Archive Banner */}
+        {isArchived && (
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+            <div className="flex items-center gap-2">
+              <Archive className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>
+                <strong>Historical Billing & Payroll Archive (Read-Only):</strong> Academic semester <strong>'{selectedSemester}'</strong> has concluded and is archived. All student duty claims, review stages, and disbursements are archived records.
+                {isDeptManager && ' DeptManager retains emergency override authority.'}
+              </span>
+            </div>
+            <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0 uppercase tracking-wider">
+              Archived Payroll
+            </span>
+          </div>
+        )}
 
         {/* Metric Badges */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
@@ -135,6 +163,7 @@ export const AdminBilling: React.FC = () => {
         onFacultyVerify={handleFacultyVerify}
         onManagerApprove={handleManagerApprove}
         onDispute={handleDispute}
+        isReadOnly={isArchived && !isDeptManager}
       />
     </div>
   );

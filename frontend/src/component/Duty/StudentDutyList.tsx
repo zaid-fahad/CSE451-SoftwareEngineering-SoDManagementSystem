@@ -3,6 +3,8 @@ import { DutySlot } from '../../model/duty';
 import { User } from '../../model/user';
 import { useAttendance } from '../../services/useAttendance';
 import { MapPin, Clock, GraduationCap, CheckCircle2, Calendar, Search } from 'lucide-react';
+import { DataTable, ColumnDef } from '../UI/DataTable';
+import { AttendanceRecord } from '../../model/attendance';
 
 interface StudentDutyListProps {
   duties: DutySlot[];
@@ -33,6 +35,59 @@ export const StudentDutyList: React.FC<StudentDutyListProps> = ({ duties, user, 
       (d.assignedFaculty && d.assignedFaculty.toLowerCase().includes(q))
     );
   });
+
+  const attendanceColumns: ColumnDef<AttendanceRecord>[] = [
+    {
+      key: 'date',
+      header: 'Date',
+      sortable: true,
+      accessor: (rec) => rec.date,
+      render: (rec) => <span className="font-mono font-medium text-slate-700">{rec.date}</span>,
+    },
+    {
+      key: 'dutyTitle',
+      header: 'Duty Slot',
+      sortable: true,
+      accessor: (rec) => rec.dutyTitle,
+      render: (rec) => <span className="font-bold text-slate-900">{rec.dutyTitle}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Attendance Status',
+      sortable: true,
+      align: 'center',
+      accessor: (rec) => rec.status,
+      render: (rec) => (
+        <span
+          className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+            rec.status === 'Present'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              : rec.status === 'Late'
+              ? 'bg-amber-50 text-amber-800 border border-amber-200'
+              : 'bg-red-50 text-red-800 border border-red-200'
+          }`}
+        >
+          {rec.status}
+        </span>
+      ),
+    },
+    {
+      key: 'hours',
+      header: 'Verified Hours',
+      sortable: true,
+      align: 'center',
+      accessor: (rec) => rec.hoursCompleted,
+      render: (rec) => (
+        <span className="font-mono font-bold text-blue-800">{rec.hoursCompleted} hrs</span>
+      ),
+    },
+    {
+      key: 'notes',
+      header: 'Supervisor Notes',
+      sortable: false,
+      render: (rec) => <span className="text-slate-600 font-medium">{rec.notes || 'N/A'}</span>,
+    },
+  ];
 
   return (
     <div className="space-y-6 text-left">
@@ -125,54 +180,18 @@ export const StudentDutyList: React.FC<StudentDutyListProps> = ({ duties, user, 
       )}
 
       {/* Attendance & Work Hours Log Table */}
-      <div className="card-enterprise p-5 space-y-4">
-        <h3 className="text-sm font-bold text-slate-900">My Logged Shift Attendance & Verified Hours</h3>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse min-w-[650px]">
-            <thead>
-              <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
-                <th className="p-3 border-r border-slate-200">Date</th>
-                <th className="p-3 border-r border-slate-200">Duty Slot</th>
-                <th className="p-3 border-r border-slate-200 text-center">Attendance Status</th>
-                <th className="p-3 border-r border-slate-200 text-center">Verified Hours</th>
-                <th className="p-3">Supervisor Notes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {attendanceLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-4 text-center text-slate-400 text-xs">
-                    No logged attendance records found yet.
-                  </td>
-                </tr>
-              ) : (
-                attendanceLogs.map((rec) => (
-                  <tr key={rec.id} className="border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition-colors">
-                    <td className="p-3 border-r border-slate-200 font-mono font-medium text-slate-700">{rec.date}</td>
-                    <td className="p-3 border-r border-slate-200 font-bold text-slate-900">{rec.dutyTitle}</td>
-                    <td className="p-3 border-r border-slate-200 text-center">
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        rec.status === 'Present'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : rec.status === 'Late'
-                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                          : 'bg-red-50 text-red-800 border border-red-200'
-                      }`}>
-                        {rec.status}
-                      </span>
-                    </td>
-                    <td className="p-3 border-r border-slate-200 font-mono font-bold text-center text-blue-800">
-                      {rec.hoursCompleted} hrs
-                    </td>
-                    <td className="p-3 text-slate-600 font-medium">{rec.notes || 'N/A'}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable<AttendanceRecord>
+        title="Attendance Log"
+        icon={<Clock className="w-4 h-4 text-emerald-600" />}
+        data={attendanceLogs}
+        columns={attendanceColumns}
+        rowKey={(rec) => rec.id}
+        searchPlaceholder="Search logged shifts, notes..."
+        emptyTitle="No logged attendance records found yet"
+        emptyDescription="Verified shift hours will appear here after attendance verification."
+        initialSortKey="date"
+        initialPageSize={10}
+      />
     </div>
   );
 };

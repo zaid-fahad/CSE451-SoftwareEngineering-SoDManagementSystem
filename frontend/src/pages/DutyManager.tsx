@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../services/useAuth';
 import { useDuties } from '../services/useDuties';
 import { useSemesters } from '../context/SemesterContext';
@@ -6,19 +7,26 @@ import { DutyList } from '../component/Duty/DutyList';
 import { CreateDutyModal } from '../component/Duty/CreateDutyModal';
 import { AssignStudentModal } from '../component/Duty/AssignStudentModal';
 import { Button } from '../component/UI/Button';
-import { Plus, Calendar, ShieldCheck, Filter } from 'lucide-react';
+import { Plus, Calendar, ShieldCheck, Filter, Archive } from 'lucide-react';
 import { DutySlot } from '../model/duty';
 
 export const DutyManager: React.FC = () => {
   const { user } = useAuth();
   const { semesters, activeSemester } = useSemesters();
-  const [selectedSemester, setSelectedSemester] = useState<string>('');
+  const [searchParams] = useSearchParams();
+  const urlSemester = searchParams.get('semester');
+
+  const [selectedSemester, setSelectedSemester] = useState<string>(urlSemester || '');
 
   useEffect(() => {
-    if (activeSemester && !selectedSemester) {
+    if (urlSemester) {
+      setSelectedSemester(urlSemester);
+    } else if (activeSemester && !selectedSemester) {
       setSelectedSemester(activeSemester.name);
+    } else if (!selectedSemester && semesters.length > 0) {
+      setSelectedSemester(semesters[0].name);
     }
-  }, [activeSemester, selectedSemester]);
+  }, [urlSemester, activeSemester, selectedSemester, semesters]);
 
   const { duties, students, createDuty, assignStudent, removeStudent, deleteDuty, checkStudentConflict, refreshData } = useDuties();
 
@@ -30,6 +38,10 @@ export const DutyManager: React.FC = () => {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [assignModalDuty, setAssignModalDuty] = useState<DutySlot | null>(null);
+
+  const selectedSemObj = semesters.find((s) => s.name === selectedSemester);
+  const isArchived = Boolean(selectedSemObj?.is_archived);
+  const isDeptManager = user?.role === 'DeptManager';
 
   const totalSlots = duties.length;
   const totalAssigned = duties.reduce((sum, d) => sum + d.assignedStudents.length, 0);
@@ -63,7 +75,7 @@ export const DutyManager: React.FC = () => {
             >
               {semesters.map((sem) => (
                 <option key={sem.id} value={sem.name}>
-                  {sem.name} {sem.is_active ? '(Active)' : ''}
+                  {sem.name} {sem.is_archived ? '(Archived)' : sem.is_active ? '★ (Active)' : ''}
                 </option>
               ))}
             </select>
@@ -77,13 +89,37 @@ export const DutyManager: React.FC = () => {
           <Button
             variant="primary"
             onClick={() => setIsCreateModalOpen(true)}
-            className="!py-2 !px-4 text-xs gap-1.5 self-start sm:self-auto"
+            disabled={isArchived && !isDeptManager}
+            className={`!py-2 !px-4 text-xs gap-1.5 self-start sm:self-auto ${
+              isArchived && !isDeptManager ? 'opacity-50 cursor-not-allowed bg-slate-400 hover:bg-slate-400' : ''
+            }`}
+            title={
+              isArchived && !isDeptManager
+                ? 'Semester is archived. Only Department Managers can create emergency duty slots.'
+                : undefined
+            }
           >
             <Plus className="w-4 h-4" />
             <span>Create Duty Slot</span>
           </Button>
         </div>
       </div>
+
+      {/* Historical Archive Banner */}
+      {isArchived && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Archive className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>
+              <strong>Historical Duty Archive (Read-Only):</strong> Academic semester <strong>'{selectedSemester}'</strong> has concluded and is archived. Duty assignments, supervisor logs, and shift records are locked for historical preservation.
+              {isDeptManager && ' You are signed in as DeptManager and retain emergency override privileges.'}
+            </span>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0 uppercase tracking-wider">
+            Historical Records
+          </span>
+        </div>
+      )}
 
       {/* Analytics Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -115,6 +151,7 @@ export const DutyManager: React.FC = () => {
         onOpenAssignModal={(duty) => setAssignModalDuty(duty)}
         onRemoveStudent={removeStudent}
         onDeleteDuty={deleteDuty}
+        isReadOnly={isArchived && !isDeptManager}
       />
 
       {/* Modals */}

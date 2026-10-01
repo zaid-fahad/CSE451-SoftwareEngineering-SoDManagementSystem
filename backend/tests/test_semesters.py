@@ -197,3 +197,133 @@ async def test_manager_override_bypasses_closed_onboarding(db: AsyncSession):
         slots = sched_res.json()
         assert len(slots) == 2
         assert all(s["is_override"] for s in slots)
+
+@pytest.mark.asyncio
+async def test_archive_semester_lifecycle_and_locks(db: AsyncSession):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        dept_mgr = User(
+            name="Dept Mgr Archive",
+            email="dept_arc@univ.edu",
+            department_id="DM-ARC-1",
+            hashed_password=hash_password("password"),
+            role="DeptManager"
+        )
+        lab_mgr = User(
+            name="Lab Mgr Archive",
+            email="lab_arc@univ.edu",
+            department_id="LM-ARC-1",
+            hashed_password=hash_password("password"),
+            role="LabManager"
+        )
+        stud = User(
+            name="Student Archive",
+            email="stud_arc@univ.edu",
+            department_id="ST-ARC-1",
+            hashed_password=hash_password("password"),
+            role="Student"
+        )
+        db.add_all([dept_mgr, lab_mgr, stud])
+        await db.commit()
+
+        login_dm = await ac.post("/api/v1/auth/login", json={"email": "dept_arc@univ.edu", "password": "password"})
+        dm_headers = {"Authorization": f"Bearer {login_dm.json()['access_token']}"}
+
+        login_lm = await ac.post("/api/v1/auth/login", json={"email": "lab_arc@univ.edu", "password": "password"})
+        lm_headers = {"Authorization": f"Bearer {login_lm.json()['access_token']}"}
+
+        login_st = await ac.post("/api/v1/auth/login", json={"email": "stud_arc@univ.edu", "password": "password"})
+        st_headers = {"Authorization": f"Bearer {login_st.json()['access_token']}"}
+
+        # 1. DeptManager creates a dedicated test semester
+        create_res = await ac.post(
+            "/api/v1/semesters",
+            json={"name": "Archive Test 2026", "code": "AT26", "is_active": False, "is_onboarding_open": False},
+            headers=dm_headers
+        )
+        assert create_res.status_code == 201
+        test_sem_id = create_res.json()["id"]
+
+        # 2. Non-DeptManager cannot archive the semester
+        fail_arc_lm = await ac.post(f"/api/v1/semesters/{test_sem_id}/archive", headers=lm_headers)
+        assert fail_arc_lm.status_code == 403
+
+        fail_arc_st = await ac.post(f"/api/v1/semesters/{test_sem_id}/archive", headers=st_headers)
+        assert fail_arc_st.status_code == 403
+
+        # 3. DeptManager archives the semester
+        arc_res = await ac.post(f"/api/v1/semesters/{test_sem_id}/archive", headers=dm_headers)
+        assert arc_res.status_code == 200
+        arc_data = arc_res.json()
+        assert arc_data["is_archived"] is True
+        assert arc_data["is_active"] is False
+        assert arc_data["is_onboarding_open"] is False
+        assert arc_data["status"] == "Archived"
+
+        # 4. An archived semester cannot be re-activated or have onboarding reopened
+        reactivate_fail = await ac.patch(
+            f"/api/v1/semesters/{test_sem_id}",
+            json={"is_active": True},
+            headers=dm_headers
+        )
+        assert reactivate_fail.status_code == 400
+        assert "permanently archived" in reactivate_fail.json()["detail"]
+
+        onboard_fail = await ac.patch(
+            f"/api/v1/semesters/{test_sem_id}",
+            json={"is_onboarding_open": True},
+            headers=dm_headers
+        )
+        assert onboard_fail.status_code == 400
+        assert "archived semester" in onboard_fail.json()["detail"]
+
+        # 5. Student schedule parse and override are strictly blocked for archived semester
+        raw_text = "CSE451 - MON - 09:00-11:00\n"
+        parse_arc_fail = await ac.post(
+            "/api/v1/schedule/parse",
+            json={"raw_text": raw_text, "semester": "Archive Test 2026"},
+            headers=st_headers
+        )
+        assert parse_arc_fail.status_code == 403
+        assert "archived" in parse_arc_fail.json()["detail"].lower()
+
+        # 6. Student cannot submit billing claim for archived semester
+        bill_fail = await ac.post(
+            "/api/v1/billing/submit",
+            json={"month": "December 2026", "hours_logged": 15.0, "semester": "Archive Test 2026"},
+            headers=st_headers
+        )
+        assert bill_fail.status_code == 403
+        assert "archived" in bill_fail.json()["detail"].lower()
+
+        # 7. LabManager cannot create duty in archived semester
+        duty_fail = await ac.post(
+            "/api/v1/tasks",
+            json={
+                "title": "Historical Lab Supervision",
+                "room_name": "Lab 101",
+                "date": "2026-11-02",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "semester": "Archive Test 2026"
+            },
+            headers=lm_headers
+        )
+        assert duty_fail.status_code == 403
+        assert "archived" in duty_fail.json()["detail"].lower()
+
+        # 8. DeptManager CAN perform emergency duty creation in archived semester
+        duty_ok = await ac.post(
+            "/api/v1/tasks",
+            json={
+                "title": "Emergency Audit Supervision",
+                "room_name": "Lab 101",
+                "date": "2026-11-02",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "semester": "Archive Test 2026"
+            },
+            headers=dm_headers
+        )
+        assert duty_ok.status_code == 201
+        assert duty_ok.json()["title"] == "Emergency Audit Supervision"
+

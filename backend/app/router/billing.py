@@ -11,6 +11,7 @@ from app.model.billing import BillingClaim
 from app.schemas.billing import BillingClaimCreate, BillingClaimResponse
 from app.services.security import get_current_user
 from app.services.features import require_feature
+from app.services.semesters import is_semester_archived, get_active_semester
 
 router = APIRouter(prefix="/billing", tags=["Billing & Payroll"], dependencies=[Depends(require_feature("billing_claims"))])
 
@@ -24,6 +25,19 @@ async def submit_claim(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only students can submit billing claims."
+        )
+
+    # Determine semester
+    target_semester = claim_data.semester
+    if not target_semester:
+        active_sem = await get_active_semester(db)
+        target_semester = active_sem.name if active_sem else "Autumn 2026"
+
+    # Enforce archived semester lock
+    if await is_semester_archived(target_semester, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Semester '{target_semester}' has concluded and is archived. New billing claims cannot be submitted."
         )
 
     rate = claim_data.hourly_rate if claim_data.hourly_rate is not None else 150.0
@@ -98,6 +112,14 @@ async def approve_claim(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to review billing claims."
         )
+
+    # Enforce archived semester lock (DeptManager emergency override only)
+    if claim.semester and await is_semester_archived(claim.semester, db):
+        if current_user.role != "DeptManager":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Billing claim belongs to archived semester '{claim.semester}'. Records are read-only for audit preservation. Only Department Managers can perform emergency updates."
+            )
 
     # State machine transition rules
     if action == "verify":

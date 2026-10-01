@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from app.database import Base
 
 class User(Base):
@@ -10,3 +10,5 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     role = Column(String, default="Student", nullable=False)  # Student, Faculty, LabManager, DeptManager
+    is_active = Column(Boolean, default=True, nullable=False)
+    rfid_tag = Column(String, nullable=True)

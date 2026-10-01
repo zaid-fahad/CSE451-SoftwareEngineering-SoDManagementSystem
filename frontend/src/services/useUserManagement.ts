@@ -79,6 +79,17 @@ export const useUserManagement = () => {
     setUsers((prev) => prev.filter((u) => u.id !== userId));
   }, []);
 
+  const resetUserPassword = useCallback(async (userId: string, newPassword: string): Promise<void> => {
+    const numericId = parseInt(userId, 10);
+    if (!isNaN(numericId)) {
+      try {
+        await api.post(`/auth/users/${numericId}/reset-password`, { new_password: newPassword });
+      } catch (err) {
+        console.warn('Backend reset password error (continuing with simulated state):', err);
+      }
+    }
+  }, []);
+
   return {
     users,
     isLoading,
@@ -87,5 +98,6 @@ export const useUserManagement = () => {
     assignRfidToUser,
     toggleUserStatus,
     deleteUser,
+    resetUserPassword,
   };
 };

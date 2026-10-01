@@ -16,9 +16,28 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     id: int
     role: str
+    is_active: bool = True
+    rfid_tag: Optional[str] = None
 
     class Config:
         from_attributes = True
+
+class UserProfileUpdate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=50)
+    email: EmailStr
+
+class UserProfileResponse(BaseModel):
+    user: UserResponse
+    access_token: Optional[str] = None
+    token_type: Optional[str] = "bearer"
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6, max_length=100)
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=6, max_length=100)
 
 class Token(BaseModel):
     access_token: str
