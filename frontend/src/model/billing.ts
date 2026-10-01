@@ -14,9 +14,11 @@ export interface BillItem {
   verifiedByFaculty?: string;
   approvedByManager?: string;
   disputeReason?: string;
+  semester?: string;
 }
 
 export interface BillSubmitPayload {
   month: string;
   hoursCompleted: number;
+  semester?: string;
 }

@@ -13,6 +13,7 @@ class BillingClaim(Base):
     hourly_rate = Column(Float, default=150.0, nullable=False)  # Default rate in BDT/USD
     status = Column(String, default="Pending", nullable=False)  # Pending, Verified, Approved, Paid
     amount = Column(Float, nullable=False)
+    semester = Column(String, default="Autumn 2026", index=True, nullable=False)
     created_at = Column(String, default=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
 
     # Relationships

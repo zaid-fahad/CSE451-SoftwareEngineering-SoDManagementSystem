@@ -14,6 +14,7 @@ class Duty(Base):
     assigned_student_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     status = Column(String, default="Assigned", nullable=False)  # Assigned, Completed, Verified, Approved
     notes = Column(String, nullable=True)
+    semester = Column(String, default="Autumn 2026", index=True, nullable=False)
 
     # Relationships
     assigned_student = relationship("User", backref="duties")

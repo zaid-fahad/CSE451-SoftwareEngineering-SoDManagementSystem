@@ -8,11 +8,11 @@ import io
 import csv
 from app.database import get_db
 from app.model.billing import BillingClaim
-from app.model.user import User
 from app.schemas.billing import BillingClaimCreate, BillingClaimResponse
 from app.services.security import get_current_user
+from app.services.features import require_feature
 
-router = APIRouter(prefix="/billing", tags=["Billing & Payroll"])
+router = APIRouter(prefix="/billing", tags=["Billing & Payroll"], dependencies=[Depends(require_feature("billing_claims"))])
 
 @router.post("/submit", response_model=BillingClaimResponse, status_code=status.HTTP_201_CREATED)
 async def submit_claim(
@@ -48,7 +48,8 @@ async def submit_claim(
         hours_logged=claim_data.hours_logged,
         hourly_rate=rate,
         status="Pending",
-        amount=amount
+        amount=amount,
+        semester=claim_data.semester or "Autumn 2026"
     )
     db.add(new_claim)
     await db.commit()
@@ -59,6 +60,7 @@ async def submit_claim(
 async def list_claims(
     status_filter: Optional[str] = None,
     student_id_filter: Optional[int] = None,
+    semester: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -72,6 +74,9 @@ async def list_claims(
 
     if status_filter:
         query = query.where(BillingClaim.status == status_filter)
+
+    if semester:
+        query = query.where(BillingClaim.semester == semester)
 
     result = await db.execute(query)
     return result.scalars().all()

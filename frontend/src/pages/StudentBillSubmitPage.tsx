@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../services/useAuth';
 import { useAttendance } from '../services/useAttendance';
+import { useSemesters } from '../context/SemesterContext';
 import { Button } from '../component/UI/Button';
 import {
   DollarSign,
@@ -14,13 +15,22 @@ import {
   CheckSquare,
   Square,
   Send,
-  Award
+  Award,
+  Filter,
 } from 'lucide-react';
 
 export const StudentBillSubmitPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { attendanceRecords } = useAttendance();
+  const { semesters, activeSemester } = useSemesters();
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
+
+  React.useEffect(() => {
+    if (activeSemester && !selectedSemester) {
+      setSelectedSemester(activeSemester.name);
+    }
+  }, [activeSemester, selectedSemester]);
 
   const [hourlyRate] = useState<number>(500);
   const [selectedDutyIds, setSelectedDutyIds] = useState<string[]>([]);
@@ -147,7 +157,24 @@ export const StudentBillSubmitPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          {/* Semester Selector */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
+            <span className="font-semibold text-slate-600">Semester:</span>
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="bg-transparent font-bold text-blue-700 outline-none cursor-pointer"
+            >
+              {semesters.map((sem) => (
+                <option key={sem.id} value={sem.name}>
+                  {sem.name} {sem.is_active ? '(Active)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5">
             <Award className="w-4 h-4 text-emerald-600" />
             Rate: ৳{hourlyRate} / Hour

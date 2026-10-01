@@ -24,6 +24,7 @@ const mapBackendClaimToFrontend = (b: any, studentsList: User[]): BillItem => {
     submittedAt: b.created_at,
     verifiedByFaculty: b.status === 'Verified' || b.status === 'Approved' || b.status === 'Paid' ? 'Verified by Supervisor' : undefined,
     approvedByManager: b.status === 'Approved' || b.status === 'Paid' ? 'Approved by Dept Head' : undefined,
+    semester: b.semester || undefined,
   };
 };
 
@@ -31,7 +32,7 @@ export const useBilling = () => {
   const [bills, setBills] = useState<BillItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const refreshClaims = useCallback(async () => {
+  const refreshClaims = useCallback(async (semesterFilter?: string) => {
     setIsLoading(true);
     try {
       const studRes = await api.get('/auth/students');
@@ -43,7 +44,9 @@ export const useBilling = () => {
         role: s.role,
       }));
 
-      const res = await api.get('/billing/claims');
+      const res = await api.get('/billing/claims', {
+        params: semesterFilter ? { semester: semesterFilter } : {},
+      });
       const mapped = res.data.map((b: any) => mapBackendClaimToFrontend(b, fetchedStudents));
       setBills(mapped);
     } catch (err) {
@@ -68,6 +71,7 @@ export const useBilling = () => {
           month: payload.month,
           hours_logged: payload.hoursCompleted,
           hourly_rate: 150.0, // standard rate
+          semester: payload.semester || undefined,
         });
         await refreshClaims();
         return mapBackendClaimToFrontend(res.data, [user]);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../services/useAuth';
 import { useSchedule } from '../services/useSchedule';
 import { useDuties } from '../services/useDuties';
@@ -12,13 +12,30 @@ import { IRASParseModal } from '../component/Schedule/IRASParseModal';
 import { SubmitBillModal } from '../component/Billing/SubmitBillModal';
 import { CreateDutyModal } from '../component/Duty/CreateDutyModal';
 import { BillSubmitPayload } from '../model/billing';
+import { useSemesters } from '../context/SemesterContext';
 import { CheckCircle2 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { slots, toggleSlot, parseIRASText, loadDemoData, resetGrid } = useSchedule();
-  const { duties, students, createDuty } = useDuties();
+  const { activeSemester } = useSemesters();
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
+
+  const { slots, toggleSlot, parseIRASText, loadDemoData, resetGrid, fetchSchedule } = useSchedule();
+  const { duties, students, createDuty, refreshData: refreshDuties } = useDuties();
   const { submitBill } = useBilling();
+
+  useEffect(() => {
+    if (activeSemester && !selectedSemester) {
+      setSelectedSemester(activeSemester.name);
+    }
+  }, [activeSemester, selectedSemester]);
+
+  useEffect(() => {
+    if (selectedSemester) {
+      fetchSchedule(selectedSemester);
+      refreshDuties(selectedSemester);
+    }
+  }, [selectedSemester, fetchSchedule, refreshDuties]);
 
   const [isParseModalOpen, setIsParseModalOpen] = useState<boolean>(false);
   const [isBillModalOpen, setIsBillModalOpen] = useState<boolean>(false);
@@ -79,7 +96,9 @@ export const Dashboard: React.FC = () => {
           user={user}
           slots={slots}
           duties={duties}
-          onToggleSlot={toggleSlot}
+          selectedSemester={selectedSemester}
+          onSelectSemester={setSelectedSemester}
+          onToggleSlot={(day, time) => toggleSlot(day, time, selectedSemester)}
           onResetGrid={resetGrid}
           onLoadDemoData={loadDemoData}
           onOpenParseModal={() => setIsParseModalOpen(true)}
@@ -92,7 +111,7 @@ export const Dashboard: React.FC = () => {
       <IRASParseModal
         isOpen={isParseModalOpen}
         onClose={() => setIsParseModalOpen(false)}
-        onParse={parseIRASText}
+        onParse={(rawText) => parseIRASText(rawText, selectedSemester)}
       />
 
       <SubmitBillModal

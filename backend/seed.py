@@ -7,11 +7,16 @@ from app.model.duty import Duty
 from app.model.swap import Swap
 from app.model.notification import Notification
 from app.model.billing import BillingClaim
+from app.model.feature_flag import FeatureFlag
+from app.model.semester import Semester
 from app.services.security import hash_password
+from app.services.features import init_feature_flags
+from app.services.semesters import init_semesters
 
 async def seed_data():
-    # Make sure all tables exist
+    # Recreate all tables with updated schema
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
     async with AsyncSessionLocal() as session:
@@ -21,8 +26,15 @@ async def seed_data():
         await session.execute(Swap.__table__.delete())
         await session.execute(Duty.__table__.delete())
         await session.execute(Schedule.__table__.delete())
+        await session.execute(Semester.__table__.delete())
         await session.execute(User.__table__.delete())
         await session.commit()
+
+        print("Initializing Feature Flags...")
+        await init_feature_flags(session)
+
+        print("Initializing Semesters...")
+        await init_semesters(session)
 
         print("Inserting Users...")
         # Password for all demo accounts is "password"
