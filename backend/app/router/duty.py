@@ -71,7 +71,8 @@ async def create_duty(
         end_time=duty_data.end_time,
         assigned_student_id=duty_data.assigned_student_id,
         status="Assigned",
-        notes=duty_data.notes
+        notes=duty_data.notes,
+        semester=duty_data.semester or "Autumn 2026"
     )
 
     db.add(new_duty)
@@ -84,6 +85,7 @@ async def list_duties(
     student_id: Optional[int] = None,
     status_filter: Optional[str] = None,
     date_filter: Optional[str] = None,
+    semester: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -103,6 +105,9 @@ async def list_duties(
 
     if date_filter:
         query = query.where(Duty.date == date_filter)
+
+    if semester:
+        query = query.where(Duty.semester == semester)
 
     result = await db.execute(query)
     return result.scalars().all()
@@ -156,6 +161,8 @@ async def update_duty(
         duty.status = updates.status
     if updates.notes:
         duty.notes = updates.notes
+    if updates.semester:
+        duty.semester = updates.semester
 
     # If assigned student has changed or time changed, run conflict checks
     if updates.assigned_student_id is not None and updates.assigned_student_id != duty.assigned_student_id:

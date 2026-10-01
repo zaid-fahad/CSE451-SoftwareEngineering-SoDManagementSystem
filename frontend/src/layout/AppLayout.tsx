@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../services/useAuth';
 import { useNotifications } from '../services/useNotifications';
+import { useFeatureFlags } from '../context/FeatureFlagContext';
 import { DemoRoleBar } from '../component/UI/DemoRoleBar';
+import { FeatureSettingsModal } from '../component/UI/FeatureSettingsModal';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -19,6 +21,7 @@ import {
   UserCheck,
   Bell,
   DollarSign,
+  Settings,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -28,89 +31,118 @@ interface AppLayoutProps {
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const { notifications, unreadCount, markAsRead } = useNotifications();
+  const { isFeatureEnabled } = useFeatureFlags();
   const location = useLocation();
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
 
   const role = user?.role || 'Student';
 
-  // Navigation Links Definition conditioned on role
+  // Navigation Links Definition conditioned on role & feature flags
   const navItems = [
     {
       label: 'Dashboard Overview',
       path: '/dashboard',
       icon: LayoutDashboard,
       roles: ['Student', 'Faculty', 'LabManager', 'DeptManager'],
+      enabled: true,
     },
     {
       label: 'My Assigned Duties',
       path: '/my-duties',
       icon: CalendarDays,
       roles: ['Student'],
+      enabled: true,
     },
     {
       label: 'Shift Swap Portal',
       path: '/swaps',
       icon: ArrowRightLeft,
       roles: ['Student'],
+      enabled: isFeatureEnabled('shift_swaps'),
     },
     {
       label: 'Submit Duty Payroll Claim',
       path: '/submit-bill',
       icon: DollarSign,
       roles: ['Student'],
+      enabled: isFeatureEnabled('billing_claims'),
     },
     {
       label: 'Faculty Supervision',
       path: '/faculty/overview',
       icon: GraduationCap,
       roles: ['Faculty', 'DeptManager'],
+      enabled: true,
     },
     {
       label: 'Duty Slot Manager',
       path: '/manager/duties',
       icon: Building2,
       roles: ['LabManager', 'DeptManager', 'Faculty'],
+      enabled: true,
     },
     {
       label: 'Student Calendars',
       path: '/manager/student-calendars',
       icon: CalendarSearch,
       roles: ['LabManager', 'DeptManager', 'Faculty'],
+      enabled: true,
     },
     {
       label: 'Master Department Schedule',
       path: '/manager/master-calendar',
       icon: Calendar,
       roles: ['LabManager', 'DeptManager'],
+      enabled: true,
     },
     {
       label: 'Duty Attendance & Hours',
       path: '/manager/attendance',
       icon: ClipboardCheck,
       roles: ['LabManager', 'DeptManager', 'Faculty'],
+      enabled: isFeatureEnabled('rfid_kiosk'),
     },
     {
       label: 'User Administration',
       path: '/admin/users',
       icon: UserCheck,
       roles: ['DeptManager'],
+      enabled: true,
     },
     {
       label: 'Billing & Payroll',
       path: '/admin/billing',
       icon: FileSpreadsheet,
       roles: ['Faculty', 'DeptManager'],
+      enabled: isFeatureEnabled('billing_claims'),
+    },
+    {
+      label: 'Academic Semesters',
+      path: '/admin/semesters',
+      icon: CalendarDays,
+      roles: ['DeptManager'],
+      enabled: true,
+    },
+    {
+      label: 'System Settings',
+      path: '/admin/settings',
+      icon: Settings,
+      roles: ['DeptManager'],
+      enabled: true,
     },
   ];
 
-  const filteredNavItems = navItems.filter((item) => item.roles.includes(role));
+  const filteredNavItems = navItems
+    .filter((item) => item.enabled)
+    .filter((item) => item.roles.includes(role));
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      {/* Demo Role Switcher Toolbar */}
-      <DemoRoleBar />
+      {/* Demo Role Switcher Toolbar - only visible if demo_mode is enabled */}
+      {isFeatureEnabled('demo_mode') && <DemoRoleBar />}
 
       {/* Top Mobile & Desktop Header Bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs h-16 flex items-center justify-between px-4 sm:px-6">
@@ -191,6 +223,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             </div>
           )}
 
+          {/* Quick Settings Icon for DeptManager */}
+          {user?.role === 'DeptManager' && (
+            <button
+              onClick={() => setIsSettingsModalOpen(true)}
+              className="p-2 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Feature Flags & System Settings"
+            >
+              <Settings className="w-4 h-4 text-slate-700" />
+            </button>
+          )}
+
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-100 border border-slate-200 text-xs font-medium">
             <UserCheck className="w-3.5 h-3.5 text-blue-600" />
             <span className="text-slate-900 font-bold">{user?.name}</span>
@@ -267,6 +310,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </main>
 
       </div>
+
+      {/* Feature Settings Quick Modal for DeptManager */}
+      <FeatureSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+      />
     </div>
   );
 };

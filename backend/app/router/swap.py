@@ -16,8 +16,9 @@ from app.services.swap import (
     broadcast_swap_notifications,
     process_swap_response
 )
+from app.services.features import require_feature
 
-router = APIRouter(prefix="/swaps", tags=["Shift Swaps"])
+router = APIRouter(prefix="/swaps", tags=["Shift Swaps"], dependencies=[Depends(require_feature("shift_swaps"))])
 notif_router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 @router.post("/request", response_model=SwapResponse, status_code=status.HTTP_201_CREATED)

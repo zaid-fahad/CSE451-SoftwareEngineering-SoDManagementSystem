@@ -12,6 +12,7 @@ class Schedule(Base):
     end_time = Column(String, nullable=False)  # HH:MM (24h format, e.g. "11:00")
     course_code = Column(String, nullable=True)  # e.g., "PHY101"
     is_override = Column(Boolean, default=False, nullable=False)  # True if manually set by student
+    semester = Column(String, default="Autumn 2026", index=True, nullable=False)
 
     # Relationship to user model
     student = relationship("User", backref="schedules")

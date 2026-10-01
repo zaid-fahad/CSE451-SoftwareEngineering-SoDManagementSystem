@@ -87,6 +87,7 @@ const mapBackendDutyToFrontend = (d: any, allStudents: User[]): DutySlot => {
     maxStudents: 2,
     assignedStudents,
     assignedFaculty,
+    semester: d.semester || undefined,
   };
 };
 
@@ -95,7 +96,7 @@ export const useDuties = () => {
   const [students, setStudents] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (semesterFilter?: string) => {
     setIsLoading(true);
     try {
       const studRes = await api.get('/auth/students');
@@ -108,7 +109,9 @@ export const useDuties = () => {
       }));
       setStudents(fetchedStudents);
 
-      const res = await api.get('/tasks');
+      const res = await api.get('/tasks', {
+        params: semesterFilter ? { semester: semesterFilter } : {},
+      });
       const mapped = res.data.map((d: any) => mapBackendDutyToFrontend(d, fetchedStudents));
       setDuties(mapped);
     } catch (err) {
@@ -187,6 +190,7 @@ export const useDuties = () => {
           end_time,
           assigned_student_id: data.assignedStudentId ? Number(data.assignedStudentId) : null,
           notes: notesJson,
+          semester: data.semester || undefined,
         });
 
         await refreshData();

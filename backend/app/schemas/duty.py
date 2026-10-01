@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 
 class DutyBase(BaseModel):
@@ -8,6 +8,7 @@ class DutyBase(BaseModel):
     end_time: str = Field(..., description="End time formatted as HH:MM")
     assigned_student_id: Optional[int] = None
     notes: Optional[str] = None
+    semester: str = "Autumn 2026"
 
 class DutyCreate(DutyBase):
     pass
@@ -20,11 +21,11 @@ class DutyUpdate(BaseModel):
     assigned_student_id: Optional[int] = None
     status: Optional[str] = None  # Assigned, Completed, Verified, Approved
     notes: Optional[str] = None
+    semester: Optional[str] = None
 
 class DutyResponse(DutyBase):
     id: int
     day_of_week: str
     status: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

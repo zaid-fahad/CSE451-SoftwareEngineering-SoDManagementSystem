@@ -5,10 +5,11 @@ from app.database import get_db
 from app.model.user import User
 from app.schemas.user import UserCreate, UserResponse, UserLogin, Token
 from app.services.security import hash_password, verify_password, create_access_token
+from app.services.features import require_feature
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_feature("user_registration"))])
 async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     # Check if email already exists
     email_result = await db.execute(select(User).where(User.email == user_data.email))

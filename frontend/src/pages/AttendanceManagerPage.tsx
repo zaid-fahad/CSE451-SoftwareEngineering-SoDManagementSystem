@@ -3,6 +3,8 @@ import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { useDuties } from '../services/useDuties';
 import { useAttendance } from '../services/useAttendance';
 import { Button } from '../component/UI/Button';
+import { useFeatureFlags } from '../context/FeatureFlagContext';
+import { FeatureDisabledPage } from './FeatureDisabledPage';
 import {
   ClipboardCheck,
   CheckCircle2,
@@ -356,6 +358,7 @@ const FullScreenRfidKioskPage: React.FC<{
 }> = ({ duties, students, scanRfidCard }) => {
   const { dutyId } = useParams<{ dutyId: string }>();
   const navigate = useNavigate();
+  const { isFeatureEnabled } = useFeatureFlags();
   const activeDuty = duties.find((d) => d.id === dutyId) || duties[0];
 
   const [rfidInput, setRfidInput] = useState<string>('');
@@ -492,25 +495,27 @@ const FullScreenRfidKioskPage: React.FC<{
               </div>
             </form>
 
-            {/* Quick Tap Demo Badges for Assigned Students */}
-            <div className="space-y-2 pt-2">
-              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                Assigned Students Quick-Tap Simulator:
+            {/* Quick Tap Demo Badges for Assigned Students (only when demo_mode enabled) */}
+            {isFeatureEnabled('demo_mode') && (
+              <div className="space-y-2 pt-2">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  Assigned Students Quick-Tap Simulator:
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {students.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => handleRfidScan(s.rfidTag || `RFID-${s.department_id}`)}
+                      className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-xs font-semibold text-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{s.name} ({s.rfidTag || `RFID-${s.department_id}`})</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {students.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleRfidScan(s.rfidTag || `RFID-${s.department_id}`)}
-                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-xs font-semibold text-slate-800 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{s.name} ({s.rfidTag || `RFID-${s.department_id}`})</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Live Scan Log Feed Confirmation Card */}
             {kioskScanLog && (
@@ -696,11 +701,22 @@ const AuditLogsPage: React.FC<{
 // MAIN CONTAINER COMPONENT WITH REACT ROUTER MULTI-PAGE SUB-ROUTING
 export const AttendanceManagerPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isFeatureEnabled } = useFeatureFlags();
   const { duties, students } = useDuties();
   const { attendanceRecords, checkInStudent, checkOutStudent, scanRfidCard } = useAttendance();
 
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [rfidError, setRfidError] = useState<string | null>(null);
+
+  if (!isFeatureEnabled('rfid_kiosk')) {
+    return (
+      <FeatureDisabledPage
+        featureName="RFID Attendance Kiosk"
+        featureKey="rfid_kiosk"
+        message="The RFID Attendance Kiosk and physical scanning subsystem is currently disabled by administrator."
+      />
+    );
+  }
 
   // Metrics Calculations
   const totalLogs = attendanceRecords.length;

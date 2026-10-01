@@ -5,5 +5,8 @@ from app.model.duty import Duty
 from app.model.swap import Swap
 from app.model.notification import Notification
 from app.model.billing import BillingClaim
+from app.model.feature_flag import FeatureFlag
+from app.model.semester import Semester
 
-__all__ = ["Base", "User", "Schedule", "Duty", "Swap", "Notification", "BillingClaim"]
+__all__ = ["Base", "User", "Schedule", "Duty", "Swap", "Notification", "BillingClaim", "FeatureFlag", "Semester"]
+

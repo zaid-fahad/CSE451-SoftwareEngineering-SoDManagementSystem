@@ -22,6 +22,7 @@ export interface DutySlot {
   maxStudents: number;
   assignedStudents: User[];
   assignedFaculty?: string;
+  semester?: string;
 }
 
 export interface DutyCreateRequest {
@@ -34,4 +35,5 @@ export interface DutyCreateRequest {
   maxStudents: number;
   assignedStudentId?: string;
   assignedFaculty?: string;
+  semester?: string;
 }

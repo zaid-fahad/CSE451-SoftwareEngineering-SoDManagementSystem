@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUserManagement, AddUserPayload, UpdateUserPayload } from '../services/useUserManagement';
+import { useSemesters } from '../context/SemesterContext';
 import { AddUserModal } from '../component/User/AddUserModal';
 import { EditUserModal } from '../component/User/EditUserModal';
 import { Button } from '../component/UI/Button';
 import { Input } from '../component/UI/Input';
-import { Users, UserPlus, Search, CheckCircle2, ShieldCheck, Power, Trash2, Edit, CreditCard } from 'lucide-react';
+import { Users, UserPlus, Search, CheckCircle2, ShieldCheck, Power, Trash2, Edit, CreditCard, Filter } from 'lucide-react';
 import { User } from '../model/user';
 
 export const UserManagementPage: React.FC = () => {
   const { users, addUser, updateUser, assignRfidToUser, toggleUserStatus, deleteUser } = useUserManagement();
+  const { semesters, activeSemester } = useSemesters();
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
+
+  useEffect(() => {
+    if (activeSemester && !selectedSemester) {
+      setSelectedSemester(activeSemester.name);
+    }
+  }, [activeSemester, selectedSemester]);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
@@ -89,14 +98,33 @@ export const UserManagementPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          onClick={() => setIsAddModalOpen(true)}
-          className="!py-2 !px-4 text-xs gap-1.5 self-start sm:self-auto"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>Add New User</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Semester Context Filter */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
+            <span className="font-semibold text-slate-600">Semester:</span>
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="bg-transparent font-bold text-blue-700 outline-none cursor-pointer"
+            >
+              {semesters.map((sem) => (
+                <option key={sem.id} value={sem.name}>
+                  {sem.name} {sem.is_active ? '(Active)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <Button
+            variant="primary"
+            onClick={() => setIsAddModalOpen(true)}
+            className="!py-2 !px-4 text-xs gap-1.5 self-start sm:self-auto"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Add New User</span>
+          </Button>
+        </div>
       </div>
 
       {/* Metrics Bar */}

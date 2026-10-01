@@ -54,10 +54,12 @@ export const useSchedule = () => {
     return emptyGrid;
   }, []);
 
-  const fetchSchedule = useCallback(async () => {
+  const fetchSchedule = useCallback(async (semesterName?: string) => {
     setIsLoading(true);
     try {
-      const res = await api.get('/schedule/me');
+      const res = await api.get('/schedule/me', {
+        params: semesterName ? { semester: semesterName } : {},
+      });
       const dbSlots = res.data;
 
       const updatedGrid: AvailabilitySlot[] = [];
@@ -110,7 +112,7 @@ export const useSchedule = () => {
   }, [fetchSchedule, getEmptyGrid]);
 
   const toggleSlot = useCallback(
-    async (day: DayOfWeek, time: string) => {
+    async (day: DayOfWeek, time: string, semesterName?: string) => {
       const slot = slots.find((s) => s.day === day && s.time === time);
       if (!slot || slot.type === 'Class') return;
 
@@ -127,23 +129,28 @@ export const useSchedule = () => {
           start_time: start24,
           end_time: end24,
           is_busy: isBusy,
+          semester: semesterName || undefined,
         });
       } catch (err) {
         console.error('Failed to save override:', err);
         setSlots((prev) =>
           prev.map((s) => (s.day === day && s.time === time ? { ...s, type: isBusy ? 'Free' : 'Busy' } : s))
         );
+        throw err;
       }
     },
     [slots]
   );
 
   const parseIRASText = useCallback(
-    async (rawText: string): Promise<number> => {
+    async (rawText: string, semesterName?: string): Promise<number> => {
       setIsLoading(true);
       try {
-        const res = await api.post('/schedule/parse', { raw_text: rawText });
-        await fetchSchedule();
+        const res = await api.post('/schedule/parse', {
+          raw_text: rawText,
+          semester: semesterName || undefined,
+        });
+        await fetchSchedule(semesterName);
         return res.data.slots_parsed || 0;
       } catch (err: any) {
         const errMsg = err.response?.data?.detail || 'Failed to parse schedule.';

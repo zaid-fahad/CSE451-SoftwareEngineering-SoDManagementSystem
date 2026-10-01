@@ -4,12 +4,14 @@ import { AuthLayout } from '../layout/AuthLayout';
 import { Input } from '../component/UI/Input';
 import { Button } from '../component/UI/Button';
 import { useAuth } from '../services/useAuth';
+import { useFeatureFlags } from '../context/FeatureFlagContext';
 import { Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { isFeatureEnabled } = useFeatureFlags();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -122,10 +124,18 @@ export const Login: React.FC = () => {
         </div>
       </form>
       <div className="mt-5 text-center text-xs text-slate-600">
-        Don't have an account?{' '}
-        <Link to="/register" className="text-blue-600 font-semibold hover:underline">
-          Register Account
-        </Link>
+        {isFeatureEnabled('user_registration') ? (
+          <>
+            Don't have an account?{' '}
+            <Link to="/register" className="text-blue-600 font-semibold hover:underline">
+              Register Account
+            </Link>
+          </>
+        ) : (
+          <span className="text-slate-400">
+            Student self-registration is closed. Contact department admin for access.
+          </span>
+        )}
       </div>
     </AuthLayout>
   );

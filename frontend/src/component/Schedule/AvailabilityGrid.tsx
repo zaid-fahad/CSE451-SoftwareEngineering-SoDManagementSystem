@@ -1,8 +1,9 @@
 import React from 'react';
 import { DayOfWeek, AvailabilitySlot } from '../../model/schedule';
 import { DAYS, HOURS } from '../../services/useSchedule';
-import { BookOpen, Clock, AlertCircle, CheckCircle2, RotateCcw, Download } from 'lucide-react';
+import { BookOpen, Clock, AlertCircle, CheckCircle2, RotateCcw, Download, Lock } from 'lucide-react';
 import { Button } from '../UI/Button';
+import { useFeatureFlags } from '../../context/FeatureFlagContext';
 
 interface AvailabilityGridProps {
   slots: AvailabilitySlot[];
@@ -10,6 +11,8 @@ interface AvailabilityGridProps {
   onResetGrid?: () => void;
   onLoadDemoData?: () => void;
   onExportPNG?: () => void;
+  isLocked?: boolean;
+  lockMessage?: string;
 }
 
 export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
@@ -18,7 +21,10 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
   onResetGrid,
   onLoadDemoData,
   onExportPNG,
+  isLocked = false,
+  lockMessage,
 }) => {
+  const { isFeatureEnabled } = useFeatureFlags();
   // Metric calculations
   const classCount = slots.filter((s) => s.type === 'Class').length;
   const busyCount = slots.filter((s) => s.type === 'Busy').length;
@@ -30,6 +36,18 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
 
   return (
     <div id="availability-grid-container" className="space-y-4 text-left p-1 bg-white rounded-lg">
+      {/* Semester Locked Banner */}
+      {isLocked && (
+        <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-3 text-amber-900 text-xs shadow-xs">
+          <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+          <div>
+            <span className="font-bold">Semester Schedule Locked (Read-Only): </span>
+            {lockMessage ||
+              'Semester onboarding is currently closed. You cannot modify your availability or re-parse timetable data. Please contact a Lab or Department Manager to request an override.'}
+          </div>
+        </div>
+      )}
+
       {/* Grid Summary Header */}
       <div className="card-enterprise p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
@@ -38,7 +56,9 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
             <span>Weekly Availability Matrix</span>
           </h2>
           <p className="text-xs text-slate-500">
-            Click on any free slot to toggle manual busy overrides. Class slots are parsed from IRAS and locked.
+            {isLocked
+              ? 'Onboarding is closed for this semester. Displaying locked student schedule.'
+              : 'Click on any free slot to toggle manual busy overrides. Class slots are parsed from IRAS and locked.'}
           </p>
         </div>
 
@@ -65,13 +85,13 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
             </Button>
           )}
 
-          {onLoadDemoData && (
+          {!isLocked && isFeatureEnabled('demo_mode') && onLoadDemoData && (
             <Button variant="secondary" onClick={onLoadDemoData} className="!py-1 !px-2 text-xs">
               <span>Demo Schedule</span>
             </Button>
           )}
 
-          {onResetGrid && (
+          {!isLocked && onResetGrid && (
             <Button variant="outline" onClick={onResetGrid} className="!py-1 !px-2 text-xs gap-1">
               <RotateCcw className="w-3 h-3" />
               <span>Clear All</span>
@@ -124,12 +144,16 @@ export const AvailabilityGrid: React.FC<AvailabilityGridProps> = ({
                   return (
                     <td
                       key={`${day}-${hour}`}
-                      onClick={() => !isClass && !isDuty && onToggleSlot(day, hour)}
+                      onClick={() => !isLocked && !isClass && !isDuty && onToggleSlot(day, hour)}
                       className={`p-2 border-r border-slate-200 last:border-r-0 text-center transition-colors duration-150 select-none ${
                         isDuty
                           ? 'bg-blue-600 border-blue-700 text-white cursor-default shadow-xs'
                           : isClass
                           ? 'bg-rose-50 border-rose-200 text-rose-800 cursor-not-allowed'
+                          : isLocked
+                          ? isBusy
+                            ? 'bg-amber-50 border-amber-200 text-amber-900 cursor-not-allowed opacity-90'
+                            : 'bg-white text-slate-400 cursor-not-allowed'
                           : isBusy
                           ? 'bg-amber-50 border-amber-200 text-amber-900 cursor-pointer hover:bg-amber-100'
                           : 'bg-white hover:bg-slate-100 cursor-pointer text-slate-400'

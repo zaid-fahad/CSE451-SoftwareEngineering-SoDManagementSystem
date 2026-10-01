@@ -1,16 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../services/useAuth';
 import { useDuties } from '../services/useDuties';
+import { useSemesters } from '../context/SemesterContext';
 import { DutyList } from '../component/Duty/DutyList';
 import { CreateDutyModal } from '../component/Duty/CreateDutyModal';
 import { AssignStudentModal } from '../component/Duty/AssignStudentModal';
 import { Button } from '../component/UI/Button';
-import { Plus, Calendar, ShieldCheck } from 'lucide-react';
+import { Plus, Calendar, ShieldCheck, Filter } from 'lucide-react';
 import { DutySlot } from '../model/duty';
 
 export const DutyManager: React.FC = () => {
   const { user } = useAuth();
-  const { duties, students, createDuty, assignStudent, removeStudent, deleteDuty, checkStudentConflict } = useDuties();
+  const { semesters, activeSemester } = useSemesters();
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
+
+  useEffect(() => {
+    if (activeSemester && !selectedSemester) {
+      setSelectedSemester(activeSemester.name);
+    }
+  }, [activeSemester, selectedSemester]);
+
+  const { duties, students, createDuty, assignStudent, removeStudent, deleteDuty, checkStudentConflict, refreshData } = useDuties();
+
+  useEffect(() => {
+    if (selectedSemester) {
+      refreshData(selectedSemester);
+    }
+  }, [selectedSemester, refreshData]);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [assignModalDuty, setAssignModalDuty] = useState<DutySlot | null>(null);
@@ -31,11 +47,28 @@ export const DutyManager: React.FC = () => {
             <span>Department Duty Slots & Student Assignments</span>
           </h1>
           <p className="text-xs text-slate-500">
-            Define lab and exam duty windows, assign supervising Faculty members, and manage student capacities.
+            Define lab and exam duty windows, assign supervising Faculty members, and manage student capacities across semesters.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Semester Filter Dropdown */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
+            <span className="font-semibold text-slate-600">Semester:</span>
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="bg-transparent font-bold text-blue-700 outline-none cursor-pointer"
+            >
+              {semesters.map((sem) => (
+                <option key={sem.id} value={sem.name}>
+                  {sem.name} {sem.is_active ? '(Active)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <span className="px-2.5 py-1 rounded bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
             <span>{user?.role || 'LabManager'}</span>
@@ -89,7 +122,7 @@ export const DutyManager: React.FC = () => {
         isOpen={isCreateModalOpen}
         students={students}
         onClose={() => setIsCreateModalOpen(false)}
-        onCreate={createDuty}
+        onCreate={(data) => createDuty({ ...data, semester: selectedSemester })}
       />
 
       <AssignStudentModal

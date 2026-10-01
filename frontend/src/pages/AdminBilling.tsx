@@ -1,12 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../services/useAuth';
 import { useBilling } from '../services/useBilling';
+import { useSemesters } from '../context/SemesterContext';
 import { BillApprovalList } from '../component/Billing/BillApprovalList';
-import { FileSpreadsheet, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { FileSpreadsheet, CheckCircle2, ShieldCheck, Filter } from 'lucide-react';
 
 export const AdminBilling: React.FC = () => {
   const { user } = useAuth();
-  const { bills, verifyByFaculty, approveByManager, disputeBill, exportPayrollCsv } = useBilling();
+  const { semesters, activeSemester } = useSemesters();
+  const [selectedSemester, setSelectedSemester] = useState<string>('');
+
+  useEffect(() => {
+    if (activeSemester && !selectedSemester) {
+      setSelectedSemester(activeSemester.name);
+    }
+  }, [activeSemester, selectedSemester]);
+
+  const { bills, verifyByFaculty, approveByManager, disputeBill, exportPayrollCsv, refreshClaims } = useBilling();
+
+  useEffect(() => {
+    if (selectedSemester) {
+      refreshClaims(selectedSemester);
+    }
+  }, [selectedSemester, refreshClaims]);
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -60,7 +76,24 @@ export const AdminBilling: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Semester Filter Dropdown */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+              <Filter className="w-3.5 h-3.5 text-slate-500" />
+              <span className="font-semibold text-slate-600">Semester:</span>
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                className="bg-transparent font-bold text-blue-700 outline-none cursor-pointer"
+              >
+                {semesters.map((sem) => (
+                  <option key={sem.id} value={sem.name}>
+                    {sem.name} {sem.is_active ? '(Active)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <span className="px-3 py-1 rounded bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
               <span>Active Role: {user?.role}</span>
