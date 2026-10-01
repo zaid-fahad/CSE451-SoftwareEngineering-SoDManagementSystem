@@ -229,3 +229,5 @@ frontend/dist/
 *.sqlite
 *.sqlite3
 
+# Scratch & helper scripts
+scratch/
