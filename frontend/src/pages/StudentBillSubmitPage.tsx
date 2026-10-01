@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   AlertCircle,
   FileText,
-  Clock,
   Calendar,
   ArrowLeft,
   CheckSquare,
@@ -17,7 +16,10 @@ import {
   Send,
   Award,
   Filter,
+  Archive,
 } from 'lucide-react';
+import { DataTable, ColumnDef } from '../component/UI/DataTable';
+import { AttendanceRecord } from '../model/attendance';
 
 export const StudentBillSubmitPage: React.FC = () => {
   const navigate = useNavigate();
@@ -29,8 +31,13 @@ export const StudentBillSubmitPage: React.FC = () => {
   React.useEffect(() => {
     if (activeSemester && !selectedSemester) {
       setSelectedSemester(activeSemester.name);
+    } else if (!selectedSemester && semesters.length > 0) {
+      setSelectedSemester(semesters[0].name);
     }
-  }, [activeSemester, selectedSemester]);
+  }, [activeSemester, selectedSemester, semesters]);
+
+  const selectedSemObj = semesters.find((s) => s.name === selectedSemester);
+  const isArchived = Boolean(selectedSemObj?.is_archived);
 
   const [hourlyRate] = useState<number>(500);
   const [selectedDutyIds, setSelectedDutyIds] = useState<string[]>([]);
@@ -77,6 +84,87 @@ export const StudentBillSubmitPage: React.FC = () => {
   const selectedRecords = userRecords.filter((r) => selectedDutyIds.includes(r.id));
   const totalSelectedHours = selectedRecords.reduce((acc, r) => acc + (r.hoursCompleted || 2), 0);
   const totalGrossAmount = totalSelectedHours * hourlyRate;
+
+  const shiftColumns: ColumnDef<AttendanceRecord>[] = [
+    {
+      key: 'select',
+      header: (
+        <input
+          type="checkbox"
+          checked={userRecords.length > 0 && selectedDutyIds.length === userRecords.length}
+          onChange={selectAll}
+          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+        />
+      ),
+      width: '48px',
+      align: 'center',
+      render: (rec) => {
+        const isSelected = selectedDutyIds.includes(rec.id);
+        return (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => toggleDutySelection(rec.id)}
+            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+          />
+        );
+      },
+    },
+    {
+      key: 'dutyTitle',
+      header: 'Date & Duty Slot',
+      sortable: true,
+      accessor: (rec) => rec.dutyTitle,
+      render: (rec) => (
+        <div>
+          <div className="font-bold text-slate-900">{rec.dutyTitle}</div>
+          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+            <Calendar className="w-3 h-3 text-slate-400" />
+            <span>{rec.date} ({rec.checkInTime || '11:20'} - {rec.checkOutTime || '12:50'})</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'hours',
+      header: 'Verified Shift Hours',
+      sortable: true,
+      align: 'center',
+      accessor: (rec) => rec.hoursCompleted || 2,
+      render: (rec) => (
+        <span className="font-bold text-slate-800 font-mono">
+          {(rec.hoursCompleted || 2).toFixed(1)} hrs
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      align: 'center',
+      accessor: (rec) => rec.status,
+      render: (rec) => (
+        <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-800 uppercase">
+          {rec.status}
+        </span>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'Calculated Pay',
+      sortable: true,
+      align: 'right',
+      accessor: (rec) => (rec.hoursCompleted || 2) * hourlyRate,
+      render: (rec) => {
+        const amount = (rec.hoursCompleted || 2) * hourlyRate;
+        return (
+          <span className="font-mono font-bold text-emerald-700 text-sm">
+            ৳{amount.toLocaleString()}
+          </span>
+        );
+      },
+    },
+  ];
 
   const handleSubmitClaim = (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,7 +257,7 @@ export const StudentBillSubmitPage: React.FC = () => {
             >
               {semesters.map((sem) => (
                 <option key={sem.id} value={sem.name}>
-                  {sem.name} {sem.is_active ? '(Active)' : ''}
+                  {sem.name} {sem.is_archived ? '(Archived)' : sem.is_active ? '★ (Active)' : ''}
                 </option>
               ))}
             </select>
@@ -182,27 +270,38 @@ export const StudentBillSubmitPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Historical Archive Banner */}
+      {isArchived && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Archive className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>
+              <strong>Historical Semester Archive (Read-Only):</strong> Academic semester <strong>'{selectedSemester}'</strong> has concluded and is archived. New billing claims cannot be submitted for this semester.
+            </span>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0 uppercase tracking-wider">
+            Submissions Closed
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Columns: Completed Shift Selection Table */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="card-enterprise p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-emerald-600" />
-                  <span>Verified Completed Duty Shifts (Select to Bill)</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Check the shifts you wish to include in this month's payroll claim.
-                </p>
-              </div>
-
+          <DataTable<AttendanceRecord>
+            title="Completed Shifts"
+            icon={<CheckSquare className="w-4 h-4 text-emerald-600" />}
+            data={userRecords}
+            columns={shiftColumns}
+            rowKey={(r) => r.id}
+            searchPlaceholder="Search duty slot, date..."
+            toolbarActions={
               <button
                 type="button"
                 onClick={selectAll}
-                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-colors cursor-pointer"
               >
-                {selectedDutyIds.length === userRecords.length ? (
+                {selectedDutyIds.length === userRecords.length && userRecords.length > 0 ? (
                   <>
                     <CheckSquare className="w-4 h-4 text-emerald-600" /> Deselect All
                   </>
@@ -212,74 +311,13 @@ export const StudentBillSubmitPage: React.FC = () => {
                   </>
                 )}
               </button>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
-                    <th className="p-3 w-10 text-center">Select</th>
-                    <th className="p-3 border-r border-slate-200">Date & Duty Slot</th>
-                    <th className="p-3 border-r border-slate-200">Verified Shift Hours</th>
-                    <th className="p-3 border-r border-slate-200 text-center">Status</th>
-                    <th className="p-3 text-right">Calculated Pay</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {userRecords.map((rec) => {
-                    const isSelected = selectedDutyIds.includes(rec.id);
-                    const hours = rec.hoursCompleted || 2;
-                    const amount = hours * hourlyRate;
-
-                    return (
-                      <tr
-                        key={rec.id}
-                        onClick={() => toggleDutySelection(rec.id)}
-                        className={`cursor-pointer transition-all ${
-                          isSelected ? 'bg-emerald-50/60 font-medium' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        <td className="p-3 text-center">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => {}}
-                            className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                          />
-                        </td>
-                        <td className="p-3 border-r border-slate-100">
-                          <div className="font-bold text-slate-900">{rec.dutyTitle}</div>
-                          <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3 text-slate-400" />
-                            <span>{rec.date} ({rec.checkInTime || '11:20'} - {rec.checkOutTime || '12:50'})</span>
-                          </div>
-                        </td>
-                        <td className="p-3 border-r border-slate-100 font-bold text-slate-800">
-                          {hours} hrs
-                        </td>
-                        <td className="p-3 border-r border-slate-100 text-center">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            {rec.status}
-                          </span>
-                        </td>
-                        <td className="p-3 text-right font-mono font-bold text-emerald-700 text-sm">
-                          ৳{amount.toLocaleString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-
-                  {userRecords.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-6 text-center text-slate-400 italic">
-                        No completed duty shift records available for billing.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+            }
+            emptyTitle="No completed duty shift records available for billing"
+            emptyDescription="Verified shift hours will appear here once marked as completed."
+            initialSortKey="dutyTitle"
+            initialPageSize={10}
+            wrapInCard={true}
+          />
         </div>
 
         {/* Right Column: Claim Summary & Submission Form */}
@@ -328,10 +366,16 @@ export const StudentBillSubmitPage: React.FC = () => {
             <Button
               type="submit"
               isLoading={isSubmitting}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 text-xs gap-2 shadow-xs"
+              disabled={isSubmitting || selectedDutyIds.length === 0 || isArchived}
+              className={`w-full font-bold py-2.5 text-xs gap-2 shadow-xs ${
+                isArchived
+                  ? 'bg-slate-400 text-white cursor-not-allowed opacity-60'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+              title={isArchived ? 'Billing submissions are closed for archived semesters.' : undefined}
             >
               <Send className="w-4 h-4" />
-              <span>Submit Official Payroll Bill Claim</span>
+              <span>{isArchived ? 'Archived Semester (Submissions Locked)' : 'Submit Official Payroll Bill Claim'}</span>
             </Button>
           </form>
 

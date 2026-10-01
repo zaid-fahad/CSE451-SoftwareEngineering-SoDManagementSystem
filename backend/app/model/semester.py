@@ -10,6 +10,16 @@ class Semester(Base):
     code = Column(String, unique=True, index=True, nullable=False)  # e.g., "AUT26"
     is_active = Column(Boolean, default=False, nullable=False)
     is_onboarding_open = Column(Boolean, default=False, nullable=False)
+    is_archived = Column(Boolean, default=False, nullable=False)
     start_date = Column(String, nullable=True)  # YYYY-MM-DD
     end_date = Column(String, nullable=True)    # YYYY-MM-DD
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    @property
+    def status(self) -> str:
+        if self.is_archived:
+            return "Archived"
+        if self.is_active:
+            return "Active"
+        return "Upcoming"
+

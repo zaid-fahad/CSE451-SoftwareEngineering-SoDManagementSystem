@@ -17,6 +17,18 @@ async def lifespan(app: FastAPI):
     # Auto-create tables on startup in development
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Ensure recently added columns exist in SQLite development databases without requiring manual migrations
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE users ADD COLUMN rfid_tag VARCHAR"))
+        except Exception:
+            pass
+
     async with AsyncSessionLocal() as session:
         await init_feature_flags(session)
         await init_semesters(session)

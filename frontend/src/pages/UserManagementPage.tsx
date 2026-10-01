@@ -1,15 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useUserManagement, AddUserPayload, UpdateUserPayload } from '../services/useUserManagement';
+import { useAuth } from '../services/useAuth';
 import { useSemesters } from '../context/SemesterContext';
 import { AddUserModal } from '../component/User/AddUserModal';
 import { EditUserModal } from '../component/User/EditUserModal';
+import { ViewUserModal } from '../component/User/ViewUserModal';
+import { ResetUserPasswordModal } from '../component/User/ResetUserPasswordModal';
 import { Button } from '../component/UI/Button';
 import { Input } from '../component/UI/Input';
-import { Users, UserPlus, Search, CheckCircle2, ShieldCheck, Power, Trash2, Edit, CreditCard, Filter } from 'lucide-react';
+import {
+  Users,
+  UserPlus,
+  CheckCircle2,
+  Filter,
+  Eye,
+  Copy,
+  Check,
+  CreditCard,
+} from 'lucide-react';
 import { User } from '../model/user';
+import { DataTable, ColumnDef } from '../component/UI/DataTable';
 
 export const UserManagementPage: React.FC = () => {
-  const { users, addUser, updateUser, assignRfidToUser, toggleUserStatus, deleteUser } = useUserManagement();
+  const { user: currentUser } = useAuth();
+  const isDeptManager = currentUser?.role === 'DeptManager';
+
+  const {
+    users,
+    addUser,
+    updateUser,
+    assignRfidToUser,
+    toggleUserStatus,
+    deleteUser,
+    resetUserPassword,
+  } = useUserManagement();
+
   const { semesters, activeSemester } = useSemesters();
   const [selectedSemester, setSelectedSemester] = useState<string>('');
 
@@ -19,27 +44,27 @@ export const UserManagementPage: React.FC = () => {
     }
   }, [activeSemester, selectedSemester]);
 
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [copiedRfid, setCopiedRfid] = useState<string | null>(null);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
+  const [passwordTargetUser, setPasswordTargetUser] = useState<User | null>(null);
   const [programmingUser, setProgrammingUser] = useState<User | null>(null);
   const [rfidInput, setRfidInput] = useState<string>('');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const filteredUsers = users.filter((u) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
-      u.department_id.toLowerCase().includes(q) ||
-      u.role.toLowerCase().includes(q) ||
-      (u.rfidTag && u.rfidTag.toLowerCase().includes(q))
-    );
-  });
-
   const totalUsers = users.length;
   const activeCount = users.filter((u) => u.isActive !== false).length;
   const deactiveCount = users.filter((u) => u.isActive === false).length;
+
+  const handleCopyRfid = (tag: string) => {
+    navigator.clipboard.writeText(tag);
+    setCopiedRfid(tag);
+    setTimeout(() => setCopiedRfid(null), 2500);
+  };
 
   const handleAddUser = async (payload: AddUserPayload) => {
     await addUser(payload);
@@ -75,6 +100,142 @@ export const UserManagementPage: React.FC = () => {
       setTimeout(() => setToastMsg(null), 3500);
     }
   };
+
+  const handleResetPassword = async (userId: string, newPassword: string) => {
+    await resetUserPassword(userId, newPassword);
+    if (passwordTargetUser) {
+      setToastMsg(`Password for ${passwordTargetUser.name} updated successfully!`);
+      setTimeout(() => setToastMsg(null), 3500);
+    }
+  };
+
+  // Filtered dataset based on role and status
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+      if (statusFilter === 'active' && u.isActive === false) return false;
+      if (statusFilter === 'deactivated' && u.isActive !== false) return false;
+      return true;
+    });
+  }, [users, roleFilter, statusFilter]);
+
+  const columns: ColumnDef<User>[] = [
+    {
+      key: 'name',
+      header: 'User Info',
+      sortable: true,
+      accessor: (u) => u.name,
+      render: (u) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
+            {u.name ? u.name.charAt(0).toUpperCase() : 'U'}
+          </div>
+          <div className="overflow-hidden">
+            <div className="font-bold text-slate-900 text-sm leading-tight truncate">{u.name}</div>
+            <div className="text-[11px] text-slate-500 font-mono mt-0.5">ID: {u.department_id}</div>
+            <div className="text-[11px] text-slate-400 truncate">{u.email}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'rfidTag',
+      header: 'Assigned RFID Badge UID',
+      sortable: true,
+      accessor: (u) => u.rfidTag || `RFID-${u.department_id}`,
+      render: (u) => {
+        const tag = u.rfidTag || `RFID-${u.department_id}`;
+        const isCopied = copiedRfid === tag;
+        return (
+          <div
+            className="flex items-center gap-1.5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+              {tag}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleCopyRfid(tag)}
+              className="text-slate-400 hover:text-blue-600 p-1 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Copy RFID Tag UID"
+            >
+              {isCopied ? (
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+              ) : (
+                <Copy className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'role',
+      header: 'Assigned Role',
+      sortable: true,
+      align: 'center',
+      accessor: (u) => u.role,
+      render: (u) => {
+        const badgeStyles: Record<string, string> = {
+          Student: 'bg-blue-50 text-blue-700 border-blue-200',
+          Faculty: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          LabManager: 'bg-purple-50 text-purple-700 border-purple-200',
+          DeptManager: 'bg-amber-50 text-amber-800 border-amber-300',
+        };
+        return (
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+              badgeStyles[u.role] || 'bg-slate-100 text-slate-700 border-slate-200'
+            }`}
+          >
+            {u.role}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'status',
+      header: 'Account Status',
+      sortable: true,
+      align: 'center',
+      accessor: (u) => (u.isActive !== false ? 'Active' : 'Deactivated'),
+      render: (u) => {
+        const isActive = u.isActive !== false;
+        return isActive ? (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Active
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            Deactivated
+          </span>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      align: 'center',
+      render: (u) => (
+        <div className="flex items-center justify-center">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewingUser(u);
+            }}
+            className="px-2.5 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+            title="View User Details & Actions"
+          >
+            <Eye className="w-3.5 h-3.5 text-blue-600" />
+            <span>View Details</span>
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6 text-left">
@@ -145,131 +306,56 @@ export const UserManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search Bar & Directory Table */}
-      <div className="card-enterprise p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="text-sm font-bold text-slate-900">User Account Directory</h3>
+      {/* Modern Enterprise DataTable */}
+      <DataTable<User>
+        title="User Directory"
+        icon={<Users className="w-4 h-4 text-blue-600" />}
+        data={filteredUsers}
+        columns={columns}
+        rowKey={(u) => u.id}
+        searchPlaceholder="Search user, email, RFID tag, role..."
+        searchKeys={[
+          'name',
+          'email',
+          'department_id',
+          'role',
+          (u) => u.rfidTag || `RFID-${u.department_id}`,
+        ]}
+        initialSortKey="name"
+        initialPageSize={10}
+        onRowClick={(u) => setViewingUser(u)}
+        toolbarActions={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+              <span className="font-semibold text-slate-500">Role:</span>
+              <select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="bg-transparent font-medium text-slate-800 outline-none cursor-pointer"
+              >
+                <option value="all">All Roles</option>
+                <option value="Student">Student</option>
+                <option value="Faculty">Faculty</option>
+                <option value="LabManager">Lab Manager</option>
+                <option value="DeptManager">Dept Manager</option>
+              </select>
+            </div>
 
-          {/* Search Input */}
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search user, email, RFID tag..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white text-slate-900 text-xs rounded-md py-2 pl-9 pr-3 border border-slate-300 focus:border-blue-600 outline-none"
-            />
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+              <span className="font-semibold text-slate-500">Status:</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-transparent font-medium text-slate-800 outline-none cursor-pointer"
+              >
+                <option value="all">All Statuses</option>
+                <option value="active">Active Only</option>
+                <option value="deactivated">Deactivated Only</option>
+              </select>
+            </div>
           </div>
-        </div>
-
-        {/* User Directory Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse min-w-[750px]">
-            <thead>
-              <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
-                <th className="p-3 border-r border-slate-200">User Info</th>
-                <th className="p-3 border-r border-slate-200">Assigned RFID Badge UID</th>
-                <th className="p-3 border-r border-slate-200 text-center">Assigned Role</th>
-                <th className="p-3 border-r border-slate-200 text-center">Account Status</th>
-                <th className="p-3 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((u) => {
-                const isActive = u.isActive !== false;
-
-                return (
-                  <tr key={u.id} className="border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition-colors">
-                    
-                    {/* User Info */}
-                    <td className="p-3 border-r border-slate-200">
-                      <div className="font-bold text-slate-900 text-sm">{u.name}</div>
-                      <div className="text-[11px] text-slate-500 font-mono">Dept ID: {u.department_id}</div>
-                      <div className="text-[11px] text-slate-400">{u.email}</div>
-                    </td>
-
-                    {/* Assigned RFID Badge UID */}
-                    <td className="p-3 border-r border-slate-200">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                          {u.rfidTag || `RFID-${u.department_id}`}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setProgrammingUser(u);
-                            setRfidInput(u.rfidTag || `RFID-${u.department_id}`);
-                          }}
-                          className="px-2 py-0.5 rounded bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 text-[10px] font-semibold border border-slate-200 transition-colors cursor-pointer flex items-center gap-1"
-                        >
-                          <CreditCard className="w-3 h-3 text-blue-600" />
-                          <span>Assign</span>
-                        </button>
-                      </div>
-                    </td>
-
-                    {/* Role Badge */}
-                    <td className="p-3 border-r border-slate-200 text-center">
-                      <span className="px-2.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-800 font-bold text-[10px] uppercase">
-                        {u.role}
-                      </span>
-                    </td>
-
-                    {/* Status Badge */}
-                    <td className="p-3 border-r border-slate-200 text-center">
-                      {isActive ? (
-                        <span className="px-2.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-[10px] uppercase flex items-center justify-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-emerald-600" /> Active
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-800 font-bold text-[10px] uppercase">
-                          Deactivated
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Actions */}
-                    <td className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => setEditingUser(u)}
-                          className="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
-                          title="Edit User Profile"
-                        >
-                          <Edit className="w-3 h-3 text-blue-600" />
-                          <span>Edit</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleToggleStatus(u.id, u.name, isActive)}
-                          className={`px-2 py-1 rounded text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
-                            isActive
-                              ? 'bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100'
-                              : 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100'
-                          }`}
-                        >
-                          <Power className="w-3 h-3" />
-                          <span>{isActive ? 'Deactivate' : 'Activate'}</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteUser(u.id, u.name)}
-                          className="p-1 text-slate-400 hover:text-red-600 transition-colors rounded cursor-pointer"
-                          title="Delete User"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        }
+      />
 
       {/* Program RFID Card Modal */}
       {programmingUser && (
@@ -290,6 +376,7 @@ export const UserManagementPage: React.FC = () => {
                 placeholder="e.g. RFID-2021-001"
                 value={rfidInput}
                 onChange={(e) => setRfidInput(e.target.value)}
+                autoFocus
               />
             </div>
 
@@ -317,6 +404,21 @@ export const UserManagementPage: React.FC = () => {
       )}
 
       {/* Modals */}
+      <ViewUserModal
+        isOpen={!!viewingUser}
+        user={viewingUser}
+        onClose={() => setViewingUser(null)}
+        onEdit={(u) => setEditingUser(u)}
+        onProgramRfid={(u) => {
+          setProgrammingUser(u);
+          setRfidInput(u.rfidTag || `RFID-${u.department_id}`);
+        }}
+        onToggleStatus={handleToggleStatus}
+        onChangePassword={(u) => setPasswordTargetUser(u)}
+        onDelete={handleDeleteUser}
+        isDeptManager={isDeptManager}
+      />
+
       <AddUserModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -328,6 +430,13 @@ export const UserManagementPage: React.FC = () => {
         user={editingUser}
         onClose={() => setEditingUser(null)}
         onUpdateUser={handleUpdateUser}
+      />
+
+      <ResetUserPasswordModal
+        isOpen={!!passwordTargetUser}
+        user={passwordTargetUser}
+        onClose={() => setPasswordTargetUser(null)}
+        onResetPassword={handleResetPassword}
       />
     </div>
   );

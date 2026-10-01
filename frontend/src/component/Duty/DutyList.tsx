@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { DutySlot } from '../../model/duty';
-import { MapPin, Clock, Users, UserPlus, Trash2, CheckCircle2, GraduationCap, Search, LayoutGrid, Table } from 'lucide-react';
+import { MapPin, Clock, Users, UserPlus, Trash2, CheckCircle2, GraduationCap, Search, LayoutGrid, Table, ClipboardList } from 'lucide-react';
 import { Button } from '../UI/Button';
+import { DataTable, ColumnDef } from '../UI/DataTable';
 
 interface DutyListProps {
   duties: DutySlot[];
   onOpenAssignModal: (duty: DutySlot) => void;
   onRemoveStudent: (dutyId: string, studentId: string) => void;
   onDeleteDuty: (dutyId: string) => void;
+  isReadOnly?: boolean;
 }
 
 export const DutyList: React.FC<DutyListProps> = ({
@@ -15,6 +17,7 @@ export const DutyList: React.FC<DutyListProps> = ({
   onOpenAssignModal,
   onRemoveStudent,
   onDeleteDuty,
+  isReadOnly = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('All');
@@ -68,10 +71,190 @@ export const DutyList: React.FC<DutyListProps> = ({
     }
   };
 
+  const tableColumns: ColumnDef<DutySlot>[] = [
+    ...(!isReadOnly
+      ? [
+          {
+            key: 'select',
+            header: (
+              <input
+                type="checkbox"
+                checked={filteredDuties.length > 0 && selectedDutyIds.length === filteredDuties.length}
+                onChange={handleSelectAll}
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+            ),
+            align: 'center' as const,
+            width: '48px',
+            render: (duty: DutySlot) => (
+              <input
+                type="checkbox"
+                checked={selectedDutyIds.includes(duty.id)}
+                onChange={() => handleToggleSelect(duty.id)}
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+            ),
+          },
+        ]
+      : []),
+    {
+      key: 'title',
+      header: 'Duty Slot Title',
+      sortable: true,
+      accessor: (duty) => duty.title,
+      render: (duty) => (
+        <span className="font-bold text-slate-900 text-sm">{duty.title}</span>
+      ),
+    },
+    {
+      key: 'type',
+      header: 'Type & Room',
+      sortable: true,
+      accessor: (duty) => duty.type,
+      render: (duty) => (
+        <div className="space-y-1">
+          <span className={`px-2 py-0.5 rounded border text-[10px] font-bold block w-fit uppercase ${getBadgeStyle(duty.type)}`}>
+            {duty.type === 'LabDuty' ? 'Lab Duty' : duty.type === 'ExamDuty' ? 'Exam Duty' : 'General Duty'}
+          </span>
+          <div className="text-[11px] font-medium text-slate-600 flex items-center gap-1">
+            <MapPin className="w-3 h-3 text-slate-400" />
+            <span>{duty.location}</span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'schedule',
+      header: 'Day & Time Window',
+      sortable: true,
+      accessor: (duty) => `${duty.day} ${duty.startTime}`,
+      render: (duty) => (
+        <div className="font-medium text-slate-700">
+          <div className="font-bold text-slate-900">{duty.day}</div>
+          <div className="text-[11px] text-slate-500 font-mono">{duty.startTime} - {duty.endTime}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'assignedStudents',
+      header: 'Assigned Students',
+      sortable: true,
+      align: 'center',
+      accessor: (duty) => duty.assignedStudents.length,
+      render: (duty) => {
+        const isFull = duty.assignedStudents.length >= duty.maxStudents;
+        return (
+          <div>
+            <span className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] ${isFull ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-blue-50 text-blue-800 border border-blue-200'}`}>
+              {duty.assignedStudents.length} / {duty.maxStudents}
+            </span>
+            <div className="text-[10px] text-slate-500 mt-1 truncate max-w-[150px]">
+              {duty.assignedStudents.map((s) => s.name).join(', ') || 'None'}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'faculty',
+      header: 'Supervising Faculty',
+      sortable: true,
+      accessor: (duty) => duty.assignedFaculty || '',
+      render: (duty) => (
+        duty.assignedFaculty ? (
+          <span className="text-purple-800 font-medium text-[11px] flex items-center gap-1">
+            <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
+            {duty.assignedFaculty}
+          </span>
+        ) : (
+          <span className="text-slate-400 text-[11px]">Unassigned</span>
+        )
+      ),
+    },
+    {
+      key: 'actions',
+      header: isReadOnly ? 'Status' : 'Actions',
+      align: 'center',
+      render: (duty) => {
+        const isFull = duty.assignedStudents.length >= duty.maxStudents;
+        return isReadOnly ? (
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+            Archived
+          </span>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => onOpenAssignModal(duty)}
+              disabled={isFull}
+              className="!py-1 !px-2 text-xs"
+            >
+              <span>Assign</span>
+            </Button>
+            <button
+              onClick={() => onDeleteDuty(duty.id)}
+              className="p-1 text-slate-400 hover:text-red-600 transition-colors rounded cursor-pointer"
+              title="Delete Duty Slot"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const toolbarTypeAndSwitcher = (
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Duty Type Filter Tabs */}
+      <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+        {['All', 'LabDuty', 'ExamDuty', 'GeneralDuty'].map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTypeFilter(t)}
+            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+              typeFilter === t
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {t === 'All' ? 'All' : t === 'LabDuty' ? 'Lab' : t === 'ExamDuty' ? 'Exam' : 'General'}
+          </button>
+        ))}
+      </div>
+
+      {/* View Mode Toggle Switcher */}
+      <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+        <button
+          type="button"
+          onClick={() => setViewMode('grid')}
+          className={`px-2 py-1 rounded-md font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+            viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+          }`}
+          title="Grid Card View"
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('table')}
+          className={`px-2 py-1 rounded-md font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
+            viewMode === 'table' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+          }`}
+          title="Table View"
+        >
+          <Table className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4 text-left">
-      {/* Search & Filter Toolbar */}
-      <div className="card-enterprise p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Search & Filter Toolbar (Grid View only) */}
+      {viewMode === 'grid' && (
+        <div className="card-enterprise p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           {/* Select All Checkbox */}
           <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer pr-2 border-r border-slate-200">
@@ -105,18 +288,14 @@ export const DutyList: React.FC<DutyListProps> = ({
           <div className="flex items-center bg-slate-100 p-1 rounded-md border border-slate-200 text-xs">
             <button
               onClick={() => setViewMode('grid')}
-              className={`px-2.5 py-1 rounded font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className="px-2.5 py-1 rounded font-semibold flex items-center gap-1 cursor-pointer transition-colors bg-white text-slate-900 shadow-xs"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
               <span>Grid</span>
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`px-2.5 py-1 rounded font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-                viewMode === 'table' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className="px-2.5 py-1 rounded font-semibold flex items-center gap-1 cursor-pointer transition-colors text-slate-500 hover:text-slate-800"
             >
               <Table className="w-3.5 h-3.5" />
               <span>Table</span>
@@ -136,9 +315,10 @@ export const DutyList: React.FC<DutyListProps> = ({
           </div>
         </div>
       </div>
+      )}
 
       {/* Batch Actions Bar */}
-      {selectedDutyIds.length > 0 && (
+      {!isReadOnly && selectedDutyIds.length > 0 && (
         <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 flex items-center justify-between text-xs animate-fadeIn">
           <span className="font-bold">
             {selectedDutyIds.length} Duty Slots Selected
@@ -179,24 +359,28 @@ export const DutyList: React.FC<DutyListProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleToggleSelect(duty.id)}
-                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      />
+                      {!isReadOnly && (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(duty.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                      )}
                       <span className={`px-2.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wider ${getBadgeStyle(duty.type)}`}>
                         {duty.type === 'LabDuty' ? 'Lab Duty' : duty.type === 'ExamDuty' ? 'Exam Duty' : 'General Duty'}
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => onDeleteDuty(duty.id)}
-                      className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded cursor-pointer"
-                      title="Delete Duty Slot"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {!isReadOnly && (
+                      <button
+                        onClick={() => onDeleteDuty(duty.id)}
+                        className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded cursor-pointer"
+                        title="Delete Duty Slot"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   <h3 className="text-base font-bold text-slate-900 leading-snug">{duty.title}</h3>
@@ -256,12 +440,14 @@ export const DutyList: React.FC<DutyListProps> = ({
                             <span className="font-medium text-slate-800">{st.name}</span>
                             <span className="text-[10px] text-slate-500">({st.department_id})</span>
                           </div>
-                          <button
-                            onClick={() => onRemoveStudent(duty.id, st.id)}
-                            className="text-slate-400 hover:text-red-600 text-[10px] underline cursor-pointer"
-                          >
-                            Remove
-                          </button>
+                          {!isReadOnly && (
+                            <button
+                              onClick={() => onRemoveStudent(duty.id, st.id)}
+                              className="text-slate-400 hover:text-red-600 text-[10px] underline cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -269,18 +455,20 @@ export const DutyList: React.FC<DutyListProps> = ({
                 </div>
 
                 {/* Footer Action */}
-                <div className="pt-2">
-                  <Button
-                    variant={isFull ? 'secondary' : 'outline'}
-                    onClick={() => onOpenAssignModal(duty)}
-                    disabled={isFull}
-                    fullWidth
-                    className="!py-1.5 text-xs gap-1.5"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>{isFull ? 'Slot Full' : 'Assign Student'}</span>
-                  </Button>
-                </div>
+                {!isReadOnly && (
+                  <div className="pt-2">
+                    <Button
+                      variant={isFull ? 'secondary' : 'outline'}
+                      onClick={() => onOpenAssignModal(duty)}
+                      disabled={isFull}
+                      fullWidth
+                      className="!py-1.5 text-xs gap-1.5"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>{isFull ? 'Slot Full' : 'Assign Student'}</span>
+                    </Button>
+                  </div>
+                )}
 
               </div>
             );
@@ -288,101 +476,18 @@ export const DutyList: React.FC<DutyListProps> = ({
         </div>
       ) : (
         /* Enterprise Table View */
-        <div className="card-enterprise p-5">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse min-w-[750px]">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
-                  <th className="p-3 border-r border-slate-200 w-10 text-center">Select</th>
-                  <th className="p-3 border-r border-slate-200">Duty Slot Title</th>
-                  <th className="p-3 border-r border-slate-200">Type & Room</th>
-                  <th className="p-3 border-r border-slate-200">Day & Time Window</th>
-                  <th className="p-3 border-r border-slate-200 text-center">Assigned Students</th>
-                  <th className="p-3 border-r border-slate-200">Supervising Faculty</th>
-                  <th className="p-3 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredDuties.map((duty) => {
-                  const isSelected = selectedDutyIds.includes(duty.id);
-                  const isFull = duty.assignedStudents.length >= duty.maxStudents;
-
-                  return (
-                    <tr key={duty.id} className="border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition-colors">
-                      <td className="p-3 border-r border-slate-200 text-center">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleToggleSelect(duty.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
-                      </td>
-
-                      <td className="p-3 border-r border-slate-200 font-bold text-slate-900 text-sm">
-                        {duty.title}
-                      </td>
-
-                      <td className="p-3 border-r border-slate-200 space-y-1">
-                        <span className={`px-2 py-0.5 rounded border text-[10px] font-bold block w-fit uppercase ${getBadgeStyle(duty.type)}`}>
-                          {duty.type === 'LabDuty' ? 'Lab Duty' : duty.type === 'ExamDuty' ? 'Exam Duty' : 'General Duty'}
-                        </span>
-                        <div className="text-[11px] font-medium text-slate-600 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          <span>{duty.location}</span>
-                        </div>
-                      </td>
-
-                      <td className="p-3 border-r border-slate-200 font-medium text-slate-700">
-                        <div className="font-bold text-slate-900">{duty.day}</div>
-                        <div className="text-[11px] text-slate-500 font-mono">{duty.startTime} - {duty.endTime}</div>
-                      </td>
-
-                      <td className="p-3 border-r border-slate-200 text-center">
-                        <span className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] ${isFull ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-blue-50 text-blue-800 border border-blue-200'}`}>
-                          {duty.assignedStudents.length} / {duty.maxStudents}
-                        </span>
-                        <div className="text-[10px] text-slate-500 mt-1 truncate max-w-[150px]">
-                          {duty.assignedStudents.map((s) => s.name).join(', ') || 'None'}
-                        </div>
-                      </td>
-
-                      <td className="p-3 border-r border-slate-200 text-slate-700">
-                        {duty.assignedFaculty ? (
-                          <span className="text-purple-800 font-medium text-[11px] flex items-center gap-1">
-                            <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
-                            {duty.assignedFaculty}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Unassigned</span>
-                        )}
-                      </td>
-
-                      <td className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => onOpenAssignModal(duty)}
-                            disabled={isFull}
-                            className="!py-1 !px-2 text-xs"
-                          >
-                            <span>Assign</span>
-                          </Button>
-                          <button
-                            onClick={() => onDeleteDuty(duty.id)}
-                            className="p-1 text-slate-400 hover:text-red-600 transition-colors rounded cursor-pointer"
-                            title="Delete Duty Slot"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <DataTable<DutySlot>
+          title="Duty Slots"
+          icon={<ClipboardList className="w-4 h-4 text-blue-600" />}
+          data={filteredDuties}
+          columns={tableColumns}
+          rowKey={(d) => d.id}
+          toolbarActions={toolbarTypeAndSwitcher}
+          searchPlaceholder="Search duty, room or student..."
+          wrapInCard={true}
+          initialSortKey="title"
+          initialPageSize={10}
+        />
       )}
     </div>
   );

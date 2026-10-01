@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileText, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { X, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '../UI/Button';
 
 interface IRASParseModalProps {
@@ -8,15 +8,6 @@ interface IRASParseModalProps {
   onParse: (rawText: string) => Promise<number>;
 }
 
-const SAMPLE_IRAS_TEXT = `Course: CSE451 - Software Engineering
-Day: Monday 10:00 AM - 12:00 PM (Lab Room 302)
-
-Course: MAT211 - Linear Algebra
-Day: Wednesday 02:00 PM - 04:00 PM (Classroom 405)
-
-Course: PHY102 - Physics II
-Day: Friday 09:00 AM - 10:00 AM (Auditorium B)`;
-
 export const IRASParseModal: React.FC<IRASParseModalProps> = ({ isOpen, onClose, onParse }) => {
   const [rawText, setRawText] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -24,12 +15,6 @@ export const IRASParseModal: React.FC<IRASParseModalProps> = ({ isOpen, onClose,
   const [isParsing, setIsParsing] = useState<boolean>(false);
 
   if (!isOpen) return null;
-
-  const handleLoadSample = () => {
-    setRawText(SAMPLE_IRAS_TEXT);
-    setError(null);
-    setSuccessMsg(null);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,19 +77,9 @@ export const IRASParseModal: React.FC<IRASParseModalProps> = ({ isOpen, onClose,
           )}
 
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label htmlFor="irasText" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                Raw Timetable Text
-              </label>
-              <button
-                type="button"
-                onClick={handleLoadSample}
-                className="text-xs text-blue-600 hover:underline font-medium flex items-center gap-1 cursor-pointer"
-              >
-                <Sparkles className="w-3 h-3" />
-                <span>Load Sample IRAS Format</span>
-              </button>
-            </div>
+            <label htmlFor="irasText" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+              Raw Timetable Text
+            </label>
             <textarea
               id="irasText"
               rows={6}

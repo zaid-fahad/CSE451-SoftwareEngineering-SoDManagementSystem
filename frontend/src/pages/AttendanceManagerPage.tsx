@@ -20,7 +20,6 @@ import {
   Building,
   ArrowLeft,
   ChevronRight,
-  Search,
   CalendarCheck,
   FileText,
   Zap,
@@ -28,6 +27,8 @@ import {
   Maximize2
 } from 'lucide-react';
 import { DutySlot } from '../model/duty';
+import { AttendanceRecord } from '../model/attendance';
+import { DataTable, ColumnDef } from '../component/UI/DataTable';
 
 // PAGE 1: SCHEDULED DUTY SLOTS LIST PAGE (/manager/attendance)
 const DutySlotsListPage: React.FC<{ duties: DutySlot[] }> = ({ duties }) => {
@@ -142,6 +143,131 @@ const ShiftAttendancePage: React.FC<{
     );
   }
 
+  const rosterColumns: ColumnDef<any>[] = [
+    {
+      key: 'name',
+      header: 'Student Assistant',
+      sortable: true,
+      accessor: (stud) => stud.name,
+      render: (stud) => (
+        <div>
+          <div className="font-bold text-slate-900 text-sm">{stud.name}</div>
+          <div className="text-[10px] text-slate-500 font-mono">Dept ID: {stud.department_id}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'rfid',
+      header: 'Assigned RFID Badge UID',
+      sortable: true,
+      accessor: (stud) => stud.rfidTag || `RFID-${stud.department_id}`,
+      render: (stud) => (
+        <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded font-bold border border-blue-100 font-mono text-xs">
+          {stud.rfidTag || `RFID-${stud.department_id}`}
+        </span>
+      ),
+    },
+    {
+      key: 'timestamps',
+      header: 'Shift Timestamps',
+      sortable: false,
+      render: (stud) => {
+        const activeRecord = attendanceRecords.find(
+          (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_In'
+        );
+        const completedRecord = attendanceRecords.find(
+          (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_Out'
+        );
+        return activeRecord ? (
+          <div className="text-emerald-700 font-bold flex items-center gap-1.5">
+            <LogIn className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Checked In at {activeRecord.checkInTime}</span>
+          </div>
+        ) : completedRecord ? (
+          <div className="text-slate-600 font-medium flex items-center gap-1.5">
+            <LogOut className="w-3.5 h-3.5 text-slate-500" />
+            <span>Completed ({completedRecord.checkInTime} - {completedRecord.checkOutTime})</span>
+          </div>
+        ) : (
+          <span className="text-slate-400 italic">Not checked in</span>
+        );
+      },
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      align: 'center',
+      accessor: (stud) => {
+        const activeRecord = attendanceRecords.find(
+          (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_In'
+        );
+        const completedRecord = attendanceRecords.find(
+          (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_Out'
+        );
+        return activeRecord ? 'On Duty' : completedRecord ? 'Completed' : 'Scheduled';
+      },
+      render: (stud) => {
+        const activeRecord = attendanceRecords.find(
+          (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_In'
+        );
+        const completedRecord = attendanceRecords.find(
+          (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_Out'
+        );
+        return activeRecord ? (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center justify-center gap-1 animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" /> On Duty
+          </span>
+        ) : completedRecord ? (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+            Completed
+          </span>
+        ) : (
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+            Scheduled
+          </span>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Duty Action',
+      align: 'center',
+      render: (stud) => {
+        const activeRecord = attendanceRecords.find(
+          (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_In'
+        );
+        return activeRecord ? (
+          <button
+            type="button"
+            onClick={() => {
+              checkOutStudent(activeRecord.id);
+              setScanSuccess(`Check-out recorded for ${stud.name}.`);
+              setTimeout(() => setScanSuccess(null), 3000);
+            }}
+            className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Check Out
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              checkInStudent(stud, activeDuty, 'Manual', stud.rfidTag);
+              setScanSuccess(`Check-in recorded for ${stud.name}.`);
+              setTimeout(() => setScanSuccess(null), 3000);
+            }}
+            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            Check In
+          </button>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* Header Bar with Back Button & Full-Screen RFID Button */}
@@ -224,128 +350,24 @@ const ShiftAttendancePage: React.FC<{
       </div>
 
       {/* Assigned Student Roster Attendance Table */}
-      <div className="card-enterprise p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Users className="w-4 h-4 text-blue-600" />
-            <span>Assigned Student Assistant Attendance Roster Table</span>
-          </h3>
-          <span className="text-xs text-slate-500 font-medium">
-            Record Check-In / Check-Out for this shift
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
-                <th className="p-3 border-r border-slate-200">Student Assistant</th>
-                <th className="p-3 border-r border-slate-200">Assigned RFID Badge UID</th>
-                <th className="p-3 border-r border-slate-200">Shift Timestamps</th>
-                <th className="p-3 border-r border-slate-200 text-center">Status</th>
-                <th className="p-3 text-center">Duty Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {students.map((stud) => {
-                const activeRecord = attendanceRecords.find(
-                  (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_In'
-                );
-
-                const completedRecord = attendanceRecords.find(
-                  (r) => String(r.studentId) === String(stud.id) && r.shiftState === 'Checked_Out'
-                );
-
-                const isAssigned = activeDuty.assignedStudents.some(
-                  (st) => String(st.id) === String(stud.id)
-                );
-
-                return (
-                  <tr
-                    key={stud.id}
-                    className={`hover:bg-slate-50/60 transition-all ${
-                      isAssigned ? 'bg-white font-medium' : 'bg-slate-50/40 text-slate-500'
-                    }`}
-                  >
-                    <td className="p-3 border-r border-slate-100">
-                      <div className="font-bold text-slate-900 text-sm">{stud.name}</div>
-                      <div className="text-[10px] text-slate-500 font-mono">Dept ID: {stud.department_id}</div>
-                    </td>
-
-                    <td className="p-3 border-r border-slate-100 font-mono text-xs">
-                      <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded font-bold border border-blue-100">
-                        {stud.rfidTag || `RFID-${stud.department_id}`}
-                      </span>
-                    </td>
-
-                    <td className="p-3 border-r border-slate-100">
-                      {activeRecord ? (
-                        <div className="text-emerald-700 font-bold flex items-center gap-1.5">
-                          <LogIn className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Checked In at {activeRecord.checkInTime}</span>
-                        </div>
-                      ) : completedRecord ? (
-                        <div className="text-slate-600 font-medium flex items-center gap-1.5">
-                          <LogOut className="w-3.5 h-3.5 text-slate-500" />
-                          <span>Completed ({completedRecord.checkInTime} - {completedRecord.checkOutTime})</span>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400 italic">Not checked in</span>
-                      )}
-                    </td>
-
-                    <td className="p-3 border-r border-slate-100 text-center">
-                      {activeRecord ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center justify-center gap-1 animate-pulse">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" /> On Duty
-                        </span>
-                      ) : completedRecord ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
-                          Completed
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
-                          Scheduled
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="p-3 text-center">
-                      {activeRecord ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            checkOutStudent(activeRecord.id);
-                            setScanSuccess(`Check-out recorded for ${stud.name}.`);
-                            setTimeout(() => setScanSuccess(null), 3000);
-                          }}
-                          className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
-                        >
-                          <LogOut className="w-3.5 h-3.5" />
-                          Check Out
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            checkInStudent(stud, activeDuty, 'Manual', stud.rfidTag);
-                            setScanSuccess(`Check-in recorded for ${stud.name}.`);
-                            setTimeout(() => setScanSuccess(null), 3000);
-                          }}
-                          className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
-                        >
-                          <LogIn className="w-3.5 h-3.5" />
-                          Check In
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <DataTable<any>
+        title="Shift Roster"
+        icon={<Users className="w-4 h-4 text-blue-600" />}
+        data={students}
+        columns={rosterColumns}
+        rowKey={(s) => s.id}
+        searchPlaceholder="Search student assistant by name, ID, or RFID..."
+        searchFilter={(s, q) =>
+          s.name.toLowerCase().includes(q) ||
+          (s.department_id && s.department_id.toLowerCase().includes(q)) ||
+          (s.rfidTag && s.rfidTag.toLowerCase().includes(q))
+        }
+        emptyTitle="No student assistants found"
+        emptyDescription="No students are registered in the system."
+        initialSortKey="name"
+        initialPageSize={10}
+        wrapInCard={true}
+      />
     </div>
   );
 };
@@ -541,47 +563,145 @@ const AuditLogsPage: React.FC<{
   checkOutStudent: any;
   setScanSuccess: (msg: string | null) => void;
 }> = ({ attendanceRecords, checkOutStudent, setScanSuccess }) => {
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
 
   const filteredRecords = attendanceRecords.filter((rec) => {
-    const matchesSearch =
-      rec.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rec.dutyTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (rec.rfidTag && rec.rfidTag.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    if (!matchesSearch) return false;
     if (statusFilter === 'All') return true;
     if (statusFilter === 'Active') return rec.shiftState === 'Checked_In';
     if (statusFilter === 'RFID') return rec.method === 'RFID_Scan';
     return rec.status === statusFilter;
   });
 
-  return (
-    <div className="card-enterprise p-6 space-y-4 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+  const logColumns: ColumnDef<AttendanceRecord>[] = [
+    {
+      key: 'date',
+      header: 'Date',
+      sortable: true,
+      accessor: (rec) => rec.date,
+      render: (rec) => (
+        <span className="font-medium text-slate-900 whitespace-nowrap">{rec.date}</span>
+      ),
+    },
+    {
+      key: 'student',
+      header: 'Student Worker',
+      sortable: true,
+      accessor: (rec) => rec.studentName,
+      render: (rec) => (
         <div>
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-blue-600" />
-            <span>Overall Attendance Log History & Verified Hours Audit</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Complete audit trail of all student shift attendance logs across all department duty slots.
-          </p>
+          <div className="font-semibold text-slate-900">{rec.studentName}</div>
+          {rec.rfidTag && (
+            <div className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded inline-block mt-0.5">
+              {rec.rfidTag}
+            </div>
+          )}
         </div>
+      ),
+    },
+    {
+      key: 'timestamps',
+      header: 'Check-In / Out Timestamps',
+      sortable: false,
+      render: (rec) => (
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="text-emerald-700 font-medium flex items-center gap-1">
+            <LogIn className="w-3 h-3" /> {rec.checkInTime || 'N/A'}
+          </span>
+          <span className="text-slate-300">→</span>
+          <span className={rec.shiftState === 'Checked_In' ? 'text-amber-600 font-bold' : 'text-slate-600'}>
+            {rec.checkOutTime || 'Active / On Shift'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      sortable: true,
+      align: 'center',
+      accessor: (rec) => rec.status,
+      render: (rec) => (
+        <span
+          className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+            rec.status === 'Present'
+              ? 'bg-emerald-100 text-emerald-800'
+              : rec.status === 'Late'
+              ? 'bg-amber-100 text-amber-800'
+              : 'bg-red-100 text-red-800'
+          }`}
+        >
+          {rec.status}
+        </span>
+      ),
+    },
+    {
+      key: 'method',
+      header: 'Method',
+      sortable: true,
+      align: 'center',
+      accessor: (rec) => rec.method,
+      render: (rec) => (
+        <span
+          className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+            rec.method === 'RFID_Scan'
+              ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+              : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {rec.method === 'RFID_Scan' ? 'RFID Scan' : 'Manual'}
+        </span>
+      ),
+    },
+    {
+      key: 'hours',
+      header: 'Hours',
+      sortable: true,
+      align: 'right',
+      accessor: (rec) => rec.hoursCompleted,
+      render: (rec) => (
+        <span className="font-bold text-slate-900 font-mono">{rec.hoursCompleted} hrs</span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Shift Action',
+      align: 'center',
+      render: (rec) => (
+        rec.shiftState === 'Checked_In' ? (
+          <button
+            type="button"
+            onClick={() => {
+              checkOutStudent(rec.id);
+              setScanSuccess(`Check-out logged for ${rec.studentName}.`);
+              setTimeout(() => setScanSuccess(null), 3000);
+            }}
+            className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+          >
+            <LogOut className="w-3 h-3" />
+            Check Out
+          </button>
+        ) : (
+          <span className="text-[10px] text-slate-400 font-medium">Completed</span>
+        )
+      ),
+    },
+  ];
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search student or RFID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 w-48"
-            />
-          </div>
-
+  return (
+    <div className="space-y-4 animate-fadeIn">
+      <DataTable<AttendanceRecord>
+        title="Attendance Audit"
+        icon={<FileText className="w-4 h-4 text-blue-600" />}
+        data={filteredRecords}
+        columns={logColumns}
+        rowKey={(rec) => rec.id}
+        searchPlaceholder="Search student or RFID..."
+        searchFilter={(rec, q) =>
+          rec.studentName.toLowerCase().includes(q) ||
+          rec.dutyTitle.toLowerCase().includes(q) ||
+          Boolean(rec.rfidTag && rec.rfidTag.toLowerCase().includes(q))
+        }
+        toolbarActions={
           <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[11px] font-semibold">
             {['All', 'Active', 'Present', 'Late', 'Absent', 'RFID'].map((st) => (
               <button
@@ -596,104 +716,13 @@ const AuditLogsPage: React.FC<{
               </button>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
-              <th className="p-3 border-r border-slate-200">Date</th>
-              <th className="p-3 border-r border-slate-200">Student Worker</th>
-              <th className="p-3 border-r border-slate-200">Check-In / Out Timestamps</th>
-              <th className="p-3 border-r border-slate-200 text-center">Status</th>
-              <th className="p-3 border-r border-slate-200 text-center">Method</th>
-              <th className="p-3 border-r border-slate-200 text-right">Hours</th>
-              <th className="p-3 text-center">Shift Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredRecords.map((rec) => (
-              <tr key={rec.id} className="hover:bg-slate-50/60 transition-all">
-                <td className="p-3 border-r border-slate-100 font-medium text-slate-900 whitespace-nowrap">
-                  {rec.date}
-                </td>
-                <td className="p-3 border-r border-slate-100">
-                  <div className="font-semibold text-slate-900">{rec.studentName}</div>
-                  {rec.rfidTag && (
-                    <div className="text-[10px] font-mono text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded inline-block mt-0.5">
-                      {rec.rfidTag}
-                    </div>
-                  )}
-                </td>
-                <td className="p-3 border-r border-slate-100">
-                  <div className="flex items-center gap-2 text-[11px]">
-                    <span className="text-emerald-700 font-medium flex items-center gap-1">
-                      <LogIn className="w-3 h-3" /> {rec.checkInTime || 'N/A'}
-                    </span>
-                    <span className="text-slate-300">→</span>
-                    <span className={rec.shiftState === 'Checked_In' ? 'text-amber-600 font-bold' : 'text-slate-600'}>
-                      {rec.checkOutTime || 'Active / On Shift'}
-                    </span>
-                  </div>
-                </td>
-                <td className="p-3 border-r border-slate-100 text-center">
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                      rec.status === 'Present'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : rec.status === 'Late'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {rec.status}
-                  </span>
-                </td>
-                <td className="p-3 border-r border-slate-100 text-center">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                      rec.method === 'RFID_Scan'
-                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {rec.method === 'RFID_Scan' ? 'RFID Scan' : 'Manual'}
-                  </span>
-                </td>
-                <td className="p-3 border-r border-slate-100 text-right font-bold text-slate-900">
-                  {rec.hoursCompleted} hrs
-                </td>
-                <td className="p-3 text-center">
-                  {rec.shiftState === 'Checked_In' ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        checkOutStudent(rec.id);
-                        setScanSuccess(`Check-out logged for ${rec.studentName}.`);
-                        setTimeout(() => setScanSuccess(null), 3000);
-                      }}
-                      className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                    >
-                      <LogOut className="w-3 h-3" />
-                      Check Out
-                    </button>
-                  ) : (
-                    <span className="text-[10px] text-slate-400 font-medium">Completed</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {filteredRecords.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-6 text-center text-slate-400 italic">
-                  No matching attendance logs found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+        }
+        emptyTitle="No matching attendance logs found"
+        emptyDescription="Attendance events recorded by RFID or manual check-in will appear here."
+        initialSortKey="date"
+        initialPageSize={10}
+        wrapInCard={true}
+      />
     </div>
   );
 };
