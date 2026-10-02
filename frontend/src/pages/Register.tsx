@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Building, IdCard, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { User, Mail, Lock, Building, IdCard, AlertCircle, CheckCircle2, Calendar } from 'lucide-react';
 import { AuthLayout } from '../layout/AuthLayout';
 import { Input } from '../component/UI/Input';
 import { Button } from '../component/UI/Button';
@@ -9,6 +9,8 @@ import { UserRole } from '../model/user';
 
 export const Register: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const semesterParam = searchParams.get('semester');
   const { register } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -82,10 +84,17 @@ export const Register: React.FC = () => {
         role: formData.role,
       });
 
-      setSuccessMsg('Account created successfully! Redirecting...');
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1200);
+      if (formData.role === 'Student') {
+        setSuccessMsg('Account registered! Student accounts require Department Manager approval.');
+        setTimeout(() => {
+          navigate('/pending-approval');
+        }, 1200);
+      } else {
+        setSuccessMsg('Account created successfully! Redirecting...');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1200);
+      }
     } catch (err: any) {
       const msg =
         err.response?.data?.detail || err.message || 'Registration failed. Department ID or Email may already exist.';
@@ -97,9 +106,22 @@ export const Register: React.FC = () => {
 
   return (
     <AuthLayout
-      title="Create Account"
-      subtitle="Enter your departmental information to register"
+      title={semesterParam ? `Join ${semesterParam}` : 'Create Account'}
+      subtitle={
+        semesterParam
+          ? `Department onboarding portal for ${semesterParam}`
+          : 'Enter your departmental information to register'
+      }
     >
+      {semesterParam && (
+        <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+          <span>
+            Registering for <strong>{semesterParam}</strong> assistant duties. New student submissions will be queued for Department Manager approval.
+          </span>
+        </div>
+      )}
+
       {apiError && (
         <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />

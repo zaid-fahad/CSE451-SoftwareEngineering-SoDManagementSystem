@@ -22,6 +22,7 @@ import { SystemSettingsPage } from './pages/SystemSettingsPage';
 import { SemesterManagementPage } from './pages/SemesterManagementPage';
 import { HistoricalArchiveHubPage } from './pages/HistoricalArchiveHubPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { PendingApprovalPage } from './pages/PendingApprovalPage';
 import { ProtectedRoute } from './component/Auth/ProtectedRoute';
 
 export const App: React.FC = () => {
@@ -45,6 +46,7 @@ export const App: React.FC = () => {
               }
             />
             <Route path="/login" element={<Login />} />
+            <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
             {/* Protected Routes wrapped inside Enterprise AppLayout */}
             <Route

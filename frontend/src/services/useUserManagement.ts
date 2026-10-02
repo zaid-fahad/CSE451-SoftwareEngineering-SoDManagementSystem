@@ -32,6 +32,7 @@ export interface UpdateUserPayload {
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [pendingStudents, setPendingStudents] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchUsers = useCallback(async () => {
@@ -131,14 +132,58 @@ export const useUserManagement = () => {
     }
   }, []);
 
+  const fetchPendingStudents = useCallback(async () => {
+    try {
+      const res = await api.get('/auth/pending-students');
+      if (Array.isArray(res.data)) {
+        setPendingStudents(res.data.map((u: any) => ({
+          id: String(u.id),
+          department_id: u.department_id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          isActive: u.is_active,
+          rfidTag: u.rfid_tag || `RFID-${u.department_id}`,
+          weekly_hours_limit: u.weekly_hours_limit ?? 10.0,
+          approval_status: u.approval_status ?? 'Pending',
+        })));
+      }
+    } catch (err) {
+      console.warn('Backend /auth/pending-students fetch error:', err);
+    }
+  }, []);
+
+  const approveStudent = useCallback(async (userId: string, weeklyHoursLimit: number = 10.0) => {
+    const numericId = parseInt(userId, 10);
+    if (!isNaN(numericId)) {
+      await api.post(`/auth/students/${numericId}/approve?weekly_hours_limit=${weeklyHoursLimit}`);
+    }
+    setPendingStudents((prev) => prev.filter((s) => s.id !== userId));
+    await fetchUsers();
+  }, [fetchUsers]);
+
+  const rejectStudent = useCallback(async (userId: string) => {
+    const numericId = parseInt(userId, 10);
+    if (!isNaN(numericId)) {
+      await api.post(`/auth/students/${numericId}/reject`);
+    }
+    setPendingStudents((prev) => prev.filter((s) => s.id !== userId));
+    await fetchUsers();
+  }, [fetchUsers]);
+
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchPendingStudents();
+  }, [fetchUsers, fetchPendingStudents]);
 
   return {
     users,
+    pendingStudents,
     isLoading,
     fetchUsers,
+    fetchPendingStudents,
+    approveStudent,
+    rejectStudent,
     addUser,
     updateUser,
     assignRfidToUser,

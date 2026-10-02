@@ -21,8 +21,10 @@ import {
   ShieldAlert,
   Filter,
   ShieldCheck,
+  Share2,
 } from 'lucide-react';
 import { DataTable, ColumnDef } from '../component/UI/DataTable';
+import { ShareOnboardModal } from '../component/Semester/ShareOnboardModal';
 
 export const SemesterManagementPage: React.FC = () => {
   const {
@@ -40,6 +42,7 @@ export const SemesterManagementPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'upcoming' | 'archived'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<Semester | null>(null);
+  const [shareModalSemester, setShareModalSemester] = useState<Semester | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -253,6 +256,17 @@ export const SemesterManagementPage: React.FC = () => {
             >
               {sem.is_onboarding_open ? 'Close' : 'Open'}
             </Button>
+            {sem.is_onboarding_open && (
+              <Button
+                variant="outline"
+                onClick={() => setShareModalSemester(sem)}
+                className="!py-0.5 !px-2 text-[11px] font-semibold text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1"
+                title="Share Onboarding Link"
+              >
+                <Share2 className="w-3 h-3 text-blue-600" />
+                <span>Share</span>
+              </Button>
+            )}
           </div>
         )
       ),
@@ -451,6 +465,17 @@ export const SemesterManagementPage: React.FC = () => {
                 </>
               )}
             </Button>
+
+            {activeSemester.is_onboarding_open && (
+              <Button
+                variant="outline"
+                onClick={() => setShareModalSemester(activeSemester)}
+                className="!py-1.5 !px-3 text-xs gap-1.5 font-semibold text-blue-700 border-blue-200 hover:bg-blue-50"
+              >
+                <Share2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Share Onboarding Link</span>
+              </Button>
+            )}
 
             <Button
               variant="outline"
@@ -688,6 +713,13 @@ export const SemesterManagementPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Share Onboarding Link Modal */}
+      <ShareOnboardModal
+        isOpen={!!shareModalSemester}
+        semester={shareModalSemester}
+        onClose={() => setShareModalSemester(null)}
+      />
     </div>
   );
 };

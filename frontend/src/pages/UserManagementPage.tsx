@@ -17,6 +17,9 @@ import {
   Copy,
   Check,
   CreditCard,
+  Clock,
+  CheckCheck,
+  XCircle,
 } from 'lucide-react';
 import { User } from '../model/user';
 import { DataTable, ColumnDef } from '../component/UI/DataTable';
@@ -27,6 +30,9 @@ export const UserManagementPage: React.FC = () => {
 
   const {
     users,
+    pendingStudents,
+    approveStudent,
+    rejectStudent,
     addUser,
     updateUser,
     assignRfidToUser,
@@ -44,6 +50,10 @@ export const UserManagementPage: React.FC = () => {
     }
   }, [activeSemester, selectedSemester]);
 
+  const [activeTab, setActiveTab] = useState<'directory' | 'pending'>('directory');
+  const [pendingHoursLimits, setPendingHoursLimits] = useState<Record<string, number>>({});
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [copiedRfid, setCopiedRfid] = useState<string | null>(null);
@@ -59,6 +69,36 @@ export const UserManagementPage: React.FC = () => {
   const totalUsers = users.length;
   const activeCount = users.filter((u) => u.isActive !== false).length;
   const deactiveCount = users.filter((u) => u.isActive === false).length;
+
+  const handleApproveStudent = async (student: User) => {
+    setActionLoadingId(student.id);
+    const limit = pendingHoursLimits[student.id] ?? student.weekly_hours_limit ?? 10.0;
+    try {
+      await approveStudent(student.id, limit);
+      setToastMsg(`Approved ${student.name} with ${limit} hrs/week limit!`);
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch {
+      setToastMsg(`Failed to approve ${student.name}.`);
+      setTimeout(() => setToastMsg(null), 3500);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRejectStudent = async (student: User) => {
+    if (!confirm(`Are you sure you want to reject onboarding for ${student.name}?`)) return;
+    setActionLoadingId(student.id);
+    try {
+      await rejectStudent(student.id);
+      setToastMsg(`Registration for ${student.name} rejected.`);
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch {
+      setToastMsg(`Failed to reject ${student.name}.`);
+      setTimeout(() => setToastMsg(null), 3500);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const handleCopyRfid = (tag: string) => {
     navigator.clipboard.writeText(tag);
@@ -288,74 +328,245 @@ export const UserManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Metrics Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card-enterprise p-4 space-y-1 bg-blue-50/40 border-blue-200">
-          <span className="text-xs font-semibold text-slate-500">Total Enrolled Accounts</span>
-          <div className="text-2xl font-bold text-blue-900">{totalUsers} Users</div>
-        </div>
+      {/* View Switcher Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab('directory')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'directory'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Active Directory</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              activeTab === 'directory' ? 'bg-blue-700 text-blue-100' : 'bg-slate-200 text-slate-700'
+            }`}
+          >
+            {users.length}
+          </span>
+        </button>
 
-        <div className="card-enterprise p-4 space-y-1 bg-emerald-50/40 border-emerald-200">
-          <span className="text-xs font-semibold text-slate-500">Active Accounts</span>
-          <div className="text-2xl font-bold text-emerald-900">{activeCount} Active</div>
-        </div>
-
-        <div className="card-enterprise p-4 space-y-1 bg-amber-50/40 border-amber-200">
-          <span className="text-xs font-semibold text-slate-500">Deactivated Accounts</span>
-          <div className="text-2xl font-bold text-amber-900">{deactiveCount} Deactivated</div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('pending')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'pending'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          <span>Pending Student Approvals</span>
+          {pendingStudents.length > 0 ? (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
+              {pendingStudents.length}
+            </span>
+          ) : (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === 'pending' ? 'bg-blue-700 text-blue-100' : 'bg-slate-200 text-slate-700'
+              }`}
+            >
+              0
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Modern Enterprise DataTable */}
-      <DataTable<User>
-        title="User Directory"
-        icon={<Users className="w-4 h-4 text-blue-600" />}
-        data={filteredUsers}
-        columns={columns}
-        rowKey={(u) => u.id}
-        searchPlaceholder="Search user, email, RFID tag, role..."
-        searchKeys={[
-          'name',
-          'email',
-          'department_id',
-          'role',
-          (u) => u.rfidTag || `RFID-${u.department_id}`,
-        ]}
-        initialSortKey="name"
-        initialPageSize={10}
-        onRowClick={(u) => setViewingUser(u)}
-        toolbarActions={
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-              <span className="font-semibold text-slate-500">Role:</span>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="bg-transparent font-medium text-slate-800 outline-none cursor-pointer"
-              >
-                <option value="all">All Roles</option>
-                <option value="Student">Student</option>
-                <option value="Faculty">Faculty</option>
-                <option value="LabManager">Lab Manager</option>
-                <option value="DeptManager">Dept Manager</option>
-              </select>
+      {activeTab === 'directory' ? (
+        <>
+          {/* Metrics Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="card-enterprise p-4 space-y-1 bg-blue-50/40 border-blue-200">
+              <span className="text-xs font-semibold text-slate-500">Total Enrolled Accounts</span>
+              <div className="text-2xl font-bold text-blue-900">{totalUsers} Users</div>
             </div>
 
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-              <span className="font-semibold text-slate-500">Status:</span>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent font-medium text-slate-800 outline-none cursor-pointer"
-              >
-                <option value="all">All Statuses</option>
-                <option value="active">Active Only</option>
-                <option value="deactivated">Deactivated Only</option>
-              </select>
+            <div className="card-enterprise p-4 space-y-1 bg-emerald-50/40 border-emerald-200">
+              <span className="text-xs font-semibold text-slate-500">Active Accounts</span>
+              <div className="text-2xl font-bold text-emerald-900">{activeCount} Active</div>
+            </div>
+
+            <div className="card-enterprise p-4 space-y-1 bg-amber-50/40 border-amber-200">
+              <span className="text-xs font-semibold text-slate-500">Deactivated Accounts</span>
+              <div className="text-2xl font-bold text-amber-900">{deactiveCount} Deactivated</div>
             </div>
           </div>
-        }
-      />
+
+          {/* Modern Enterprise DataTable */}
+          <DataTable<User>
+            title="User Directory"
+            icon={<Users className="w-4 h-4 text-blue-600" />}
+            data={filteredUsers}
+            columns={columns}
+            rowKey={(u) => u.id}
+            searchPlaceholder="Search user, email, RFID tag, role..."
+            searchKeys={[
+              'name',
+              'email',
+              'department_id',
+              'role',
+              (u) => u.rfidTag || `RFID-${u.department_id}`,
+            ]}
+            initialSortKey="name"
+            initialPageSize={10}
+            onRowClick={(u) => setViewingUser(u)}
+            toolbarActions={
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                  <span className="font-semibold text-slate-500">Role:</span>
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="bg-transparent font-medium text-slate-800 outline-none cursor-pointer"
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="Student">Student</option>
+                    <option value="Faculty">Faculty</option>
+                    <option value="LabManager">Lab Manager</option>
+                    <option value="DeptManager">Dept Manager</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                  <span className="font-semibold text-slate-500">Status:</span>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="bg-transparent font-medium text-slate-800 outline-none cursor-pointer"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active Only</option>
+                    <option value="deactivated">Deactivated Only</option>
+                  </select>
+                </div>
+              </div>
+            }
+          />
+        </>
+      ) : (
+        <div className="space-y-4">
+          <div className="card-enterprise p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-amber-50/50 border-amber-200">
+            <div className="space-y-1">
+              <h2 className="text-sm font-bold text-amber-950 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" />
+                <span>Pending Student Assistant Registrations ({pendingStudents.length})</span>
+              </h2>
+              <p className="text-xs text-amber-800">
+                Self-registered student assistants require department verification and weekly duty hour allocation before they can claim duty shifts.
+              </p>
+            </div>
+            <div className="text-xs font-semibold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-lg">
+              Standard Default Quota: 10.0 hrs/week
+            </div>
+          </div>
+
+          {pendingStudents.length === 0 ? (
+            <div className="card-enterprise p-12 text-center space-y-3 bg-white">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                <CheckCheck className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-800">All Student Registrations Processed</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                There are no student assistant applications currently awaiting approval. When new students sign up via the semester onboarding link, they will appear here.
+              </p>
+            </div>
+          ) : (
+            <div className="card-enterprise overflow-hidden bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                    <tr>
+                      <th className="py-3.5 px-4">Student Details</th>
+                      <th className="py-3.5 px-4">Institutional Email</th>
+                      <th className="py-3.5 px-4 text-center">Assigned Role</th>
+                      <th className="py-3.5 px-4 text-center">Weekly Hours Limit</th>
+                      <th className="py-3.5 px-4 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pendingStudents.map((s) => {
+                      const limit = pendingHoursLimits[s.id] ?? s.weekly_hours_limit ?? 10.0;
+                      const isLoadingAction = actionLoadingId === s.id;
+                      return (
+                        <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0">
+                                {s.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-bold text-slate-900 text-sm leading-tight">{s.name}</div>
+                                <div className="text-[11px] text-slate-500 font-mono mt-0.5">ID: {s.department_id}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 font-mono text-slate-600">
+                            {s.email}
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-blue-50 text-blue-700 border-blue-200">
+                              {s.role}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1">
+                              <input
+                                type="number"
+                                min="1"
+                                max="40"
+                                step="0.5"
+                                value={limit}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value);
+                                  setPendingHoursLimits((prev) => ({
+                                    ...prev,
+                                    [s.id]: isNaN(val) ? 10.0 : val,
+                                  }));
+                                }}
+                                className="w-14 bg-transparent font-bold text-slate-800 text-xs outline-none text-right"
+                              />
+                              <span className="text-[11px] font-medium text-slate-500">hrs/wk</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Button
+                                type="button"
+                                variant="primary"
+                                onClick={() => handleApproveStudent(s)}
+                                disabled={isLoadingAction}
+                                className="!py-1 !px-3 text-xs gap-1 font-semibold !bg-emerald-600 hover:!bg-emerald-700 text-white"
+                              >
+                                <CheckCheck className="w-3.5 h-3.5" />
+                                <span>Approve</span>
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleRejectStudent(s)}
+                                disabled={isLoadingAction}
+                                className="!py-1 !px-3 text-xs gap-1 font-semibold text-rose-700 border-rose-200 hover:bg-rose-50"
+                              >
+                                <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Reject</span>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Program RFID Card Modal */}
       {programmingUser && (
