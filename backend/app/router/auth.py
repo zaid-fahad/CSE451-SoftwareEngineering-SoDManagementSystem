@@ -70,7 +70,7 @@ async def list_students(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 from app.services.security import get_current_user, create_access_token
-from app.schemas.user import UserProfileUpdate, ChangePasswordRequest, UserProfileResponse, AdminResetPasswordRequest
+from app.schemas.user import UserProfileUpdate, ChangePasswordRequest, UserProfileResponse, AdminResetPasswordRequest, UserAdminUpdate
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: User = Depends(get_current_user)):
@@ -149,5 +149,56 @@ async def admin_reset_user_password(
     db.add(target_user)
     await db.commit()
     return {"status": "success", "message": f"Password for {target_user.name} has been updated successfully."}
+
+@router.get("/users", response_model=List[UserResponse])
+async def list_all_users(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.role not in ["DeptManager", "LabManager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Managers can access the full user directory."
+        )
+    result = await db.execute(select(User))
+    return result.scalars().all()
+
+@router.put("/users/{user_id}", response_model=UserResponse)
+async def admin_update_user(
+    user_id: int,
+    update_data: UserAdminUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.role != "DeptManager":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Department Managers can update user accounts and limits."
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    target_user = result.scalars().first()
+    if not target_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Target user not found.")
+
+    if update_data.name is not None:
+        target_user.name = update_data.name
+    if update_data.email is not None:
+        target_user.email = update_data.email
+    if update_data.department_id is not None:
+        target_user.department_id = update_data.department_id
+    if update_data.role is not None:
+        target_user.role = update_data.role
+    if update_data.is_active is not None:
+        target_user.is_active = update_data.is_active
+    if update_data.rfid_tag is not None:
+        target_user.rfid_tag = update_data.rfid_tag
+    if update_data.weekly_hours_limit is not None:
+        target_user.weekly_hours_limit = update_data.weekly_hours_limit
+
+    db.add(target_user)
+    await db.commit()
+    await db.refresh(target_user)
+    return target_user
 
 

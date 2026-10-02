@@ -3,8 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../services/useAuth';
 import { useBilling } from '../services/useBilling';
 import { useSemesters } from '../context/SemesterContext';
+import { useDuties } from '../services/useDuties';
 import { BillApprovalList } from '../component/Billing/BillApprovalList';
-import { FileSpreadsheet, CheckCircle2, ShieldCheck, Filter, Archive } from 'lucide-react';
+import { ManualBillModal } from '../component/Billing/ManualBillModal';
+import { FileSpreadsheet, CheckCircle2, ShieldCheck, Filter, Archive, Plus } from 'lucide-react';
 
 export const AdminBilling: React.FC = () => {
   const { user } = useAuth();
@@ -24,7 +26,17 @@ export const AdminBilling: React.FC = () => {
     }
   }, [urlSemester, activeSemester, selectedSemester, semesters]);
 
-  const { bills, verifyByFaculty, approveByManager, disputeBill, exportPayrollCsv, refreshClaims } = useBilling();
+  const {
+    bills,
+    createManualBill,
+    verifyByFaculty,
+    approveByManager,
+    directPayout,
+    disputeBill,
+    exportPayrollCsv,
+    refreshClaims,
+  } = useBilling();
+  const { students } = useDuties();
 
   useEffect(() => {
     if (selectedSemester) {
@@ -33,6 +45,7 @@ export const AdminBilling: React.FC = () => {
   }, [selectedSemester, refreshClaims]);
 
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [isManualModalOpen, setIsManualModalOpen] = useState<boolean>(false);
 
   const selectedSemObj = semesters.find((s) => s.name === selectedSemester);
   const isArchived = Boolean(selectedSemObj?.is_archived);
@@ -41,7 +54,7 @@ export const AdminBilling: React.FC = () => {
   const totalSubmitted = bills.filter((b) => b.state === 'Submitted').length;
   const totalVerified = bills.filter((b) => b.state === 'Faculty_Verified').length;
   const totalApprovedPayout = bills
-    .filter((b) => b.state === 'Manager_Approved')
+    .filter((b) => b.state === 'Manager_Approved' || b.state === 'Paid')
     .reduce((sum, b) => sum + b.totalPayout, 0);
 
   const handleFacultyVerify = (billId: string) => {
@@ -54,6 +67,16 @@ export const AdminBilling: React.FC = () => {
     approveByManager(billId, `${user?.name || 'Prof. Manager'} (Dept Manager)`);
     setToastMsg('Financial payout approved and released by Department Manager!');
     setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const handleDirectPayout = async (billId: string) => {
+    try {
+      await directPayout(billId);
+      setToastMsg('Direct fast-track payout released successfully!');
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch (err: any) {
+      alert(err.message || 'Direct payout failed.');
+    }
   };
 
   const handleDispute = (billId: string) => {
@@ -120,6 +143,16 @@ export const AdminBilling: React.FC = () => {
                 <span>Export Payroll CSV</span>
               </button>
             )}
+
+            {(user?.role === 'DeptManager' || user?.role === 'LabManager') && (
+              <button
+                onClick={() => setIsManualModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs border-0 outline-none"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Manual Bill</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -162,8 +195,22 @@ export const AdminBilling: React.FC = () => {
         currentUser={user}
         onFacultyVerify={handleFacultyVerify}
         onManagerApprove={handleManagerApprove}
+        onDirectPayout={handleDirectPayout}
         onDispute={handleDispute}
         isReadOnly={isArchived && !isDeptManager}
+      />
+
+      {/* Manual Bill Creation Modal */}
+      <ManualBillModal
+        isOpen={isManualModalOpen}
+        students={students}
+        currentSemester={selectedSemester}
+        onClose={() => setIsManualModalOpen(false)}
+        onCreateManualBill={async (payload) => {
+          await createManualBill(payload);
+          setToastMsg('Manual billing claim created and submitted successfully!');
+          setTimeout(() => setToastMsg(null), 3500);
+        }}
       />
     </div>
   );

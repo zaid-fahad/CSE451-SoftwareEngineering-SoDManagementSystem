@@ -1,5 +1,5 @@
 import React from "react";
-import { X, Mail, Hash, ShieldCheck, CreditCard, CheckCircle2, Edit, Power, Trash2, KeyRound } from "lucide-react";
+import { X, Mail, Hash, ShieldCheck, CreditCard, CheckCircle2, Edit, Power, Trash2, KeyRound, Clock } from "lucide-react";
 import { Button } from "../UI/Button";
 import { User as UserModel } from "../../model/user";
 
@@ -106,7 +106,7 @@ export const ViewUserModal: React.FC<ViewUserModalProps> = ({
               <span className="font-mono font-semibold text-slate-900">{user.department_id}</span>
             </div>
 
-            <div className="flex items-center justify-between text-xs py-1.5">
+            <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-100">
               <span className="text-slate-500 flex items-center gap-2">
                 <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Assigned RFID Badge UID
               </span>
@@ -114,6 +114,17 @@ export const ViewUserModal: React.FC<ViewUserModalProps> = ({
                 {rfidTag}
               </span>
             </div>
+
+            {user.role === 'Student' && (
+              <div className="flex items-center justify-between text-xs py-1.5">
+                <span className="text-slate-500 flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-purple-600" /> Weekly Duty Limit
+                </span>
+                <span className="font-semibold text-xs font-mono text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded border border-purple-200">
+                  {user.weekly_hours_limit ?? 10.0} hrs / week
+                </span>
+              </div>
+            )}
           </div>
 
           {/* System Telemetry & Duty Highlights */}

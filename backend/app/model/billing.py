@@ -14,6 +14,14 @@ class BillingClaim(Base):
     status = Column(String, default="Pending", nullable=False)  # Pending, Verified, Approved, Paid
     amount = Column(Float, nullable=False)
     semester = Column(String, default="Autumn 2026", index=True, nullable=False)
+    week_number = Column(Integer, nullable=True)  # Week 1..5 of the month (optional)
+    verified_by = Column(String, nullable=True)
+    verified_at = Column(String, nullable=True)
+    approved_by = Column(String, nullable=True)
+    approved_at = Column(String, nullable=True)
+    paid_by = Column(String, nullable=True)
+    paid_at = Column(String, nullable=True)
+    dispute_reason = Column(String, nullable=True)
     created_at = Column(String, default=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
 
     # Relationships

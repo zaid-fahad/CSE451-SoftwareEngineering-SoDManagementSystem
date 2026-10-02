@@ -18,9 +18,19 @@ class UserResponse(UserBase):
     role: str
     is_active: bool = True
     rfid_tag: Optional[str] = None
+    weekly_hours_limit: float = 10.0
 
     class Config:
         from_attributes = True
+
+class UserAdminUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    department_id: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    rfid_tag: Optional[str] = None
+    weekly_hours_limit: Optional[float] = None
 
 class UserProfileUpdate(BaseModel):
     name: str = Field(..., min_length=2, max_length=50)

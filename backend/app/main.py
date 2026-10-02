@@ -28,6 +28,31 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("ALTER TABLE users ADD COLUMN rfid_tag VARCHAR"))
         except Exception:
             pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE users ADD COLUMN weekly_hours_limit FLOAT DEFAULT 10.0 NOT NULL"))
+        except Exception:
+            pass
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE users ADD COLUMN approval_status VARCHAR DEFAULT 'Approved' NOT NULL"))
+        except Exception:
+            pass
+        for col_def in [
+            "ALTER TABLE billing_claims ADD COLUMN week_number INTEGER",
+            "ALTER TABLE billing_claims ADD COLUMN verified_by VARCHAR",
+            "ALTER TABLE billing_claims ADD COLUMN verified_at VARCHAR",
+            "ALTER TABLE billing_claims ADD COLUMN approved_by VARCHAR",
+            "ALTER TABLE billing_claims ADD COLUMN approved_at VARCHAR",
+            "ALTER TABLE billing_claims ADD COLUMN paid_by VARCHAR",
+            "ALTER TABLE billing_claims ADD COLUMN paid_at VARCHAR",
+            "ALTER TABLE billing_claims ADD COLUMN dispute_reason VARCHAR",
+        ]:
+            try:
+                from sqlalchemy import text
+                await conn.execute(text(col_def))
+            except Exception:
+                pass
 
     async with AsyncSessionLocal() as session:
         await init_feature_flags(session)

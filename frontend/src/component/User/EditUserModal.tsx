@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit, AlertCircle, CreditCard, ShieldCheck } from 'lucide-react';
+import { X, Edit, AlertCircle, CreditCard, ShieldCheck, Clock } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Input } from '../UI/Input';
 import { User } from '../../model/user';
@@ -25,6 +25,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
     role: 'Student',
     isActive: true,
     rfidTag: '',
+    weekly_hours_limit: 10.0,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
         role: user.role,
         isActive: user.isActive !== false,
         rfidTag: user.rfidTag || `RFID-${user.department_id}`,
+        weekly_hours_limit: user.weekly_hours_limit ?? 10.0,
       });
     }
   }, [user]);
@@ -155,6 +157,24 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
               ))}
             </div>
           </div>
+
+          {formData.role === 'Student' && (
+            <div className="flex flex-col space-y-1.5 w-full text-left">
+              <Input
+                label="Weekly Duty Hour Limit"
+                id="weekly_hours_limit"
+                name="weekly_hours_limit"
+                type="number"
+                min={1}
+                max={40}
+                step="0.5"
+                icon={Clock}
+                value={String(formData.weekly_hours_limit ?? 10.0)}
+                onChange={(e) => setFormData((prev) => ({ ...prev, weekly_hours_limit: parseFloat(e.target.value) || 0 }))}
+                helperText="Departmental maximum duty hours the student can claim or be scheduled per week."
+              />
+            </div>
+          )}
 
           {/* Active Account Switch UI */}
           <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-slate-50/70">
