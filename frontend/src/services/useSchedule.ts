@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { DayOfWeek, AvailabilitySlot } from '../model/schedule';
 import { api } from './api';
 
-export const DAYS: DayOfWeek[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const DAYS: DayOfWeek[] = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export const HOURS = [
   '08:00 AM',

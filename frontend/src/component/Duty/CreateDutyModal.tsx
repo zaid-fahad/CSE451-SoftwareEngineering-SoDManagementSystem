@@ -17,7 +17,7 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, studen
   const [formData, setFormData] = useState<DutyCreateRequest>({
     title: '',
     location: '',
-    day: 'Monday',
+    day: 'Saturday',
     startTime: '09:00 AM',
     endTime: '11:00 AM',
     type: 'LabDuty',
@@ -55,7 +55,7 @@ export const CreateDutyModal: React.FC<CreateDutyModalProps> = ({ isOpen, studen
       setFormData({
         title: '',
         location: '',
-        day: 'Monday',
+        day: 'Saturday',
         startTime: '09:00 AM',
         endTime: '11:00 AM',
         type: 'LabDuty',
