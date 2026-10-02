@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, Float
 from app.database import Base
 
 class User(Base):
@@ -12,3 +12,4 @@ class User(Base):
     role = Column(String, default="Student", nullable=False)  # Student, Faculty, LabManager, DeptManager
     is_active = Column(Boolean, default=True, nullable=False)
     rfid_tag = Column(String, nullable=True)
+    weekly_hours_limit = Column(Float, default=10.0, nullable=False)

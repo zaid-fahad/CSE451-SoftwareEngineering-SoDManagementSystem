@@ -8,7 +8,8 @@ const mapBackendClaimToFrontend = (b: any, studentsList: User[]): BillItem => {
   
   let state: any = 'Submitted';
   if (b.status === 'Verified') state = 'Faculty_Verified';
-  if (b.status === 'Approved' || b.status === 'Paid') state = 'Manager_Approved';
+  if (b.status === 'Approved') state = 'Manager_Approved';
+  if (b.status === 'Paid') state = 'Paid';
   if (b.status === 'Rejected') state = 'Disputed';
 
   return {
@@ -17,13 +18,19 @@ const mapBackendClaimToFrontend = (b: any, studentsList: User[]): BillItem => {
     studentName: student ? student.name : 'Unknown Student',
     departmentId: student ? student.department_id : 'N/A',
     month: b.month,
+    weekNumber: b.week_number || undefined,
     hoursCompleted: b.hours_logged,
     hourlyRate: b.hourly_rate,
     totalPayout: b.amount,
     state,
     submittedAt: b.created_at,
-    verifiedByFaculty: b.status === 'Verified' || b.status === 'Approved' || b.status === 'Paid' ? 'Verified by Supervisor' : undefined,
-    approvedByManager: b.status === 'Approved' || b.status === 'Paid' ? 'Approved by Dept Head' : undefined,
+    verifiedByFaculty: b.verified_by || (b.status === 'Verified' || b.status === 'Approved' || b.status === 'Paid' ? 'Verified by Supervisor' : undefined),
+    verifiedAt: b.verified_at || undefined,
+    approvedByManager: b.approved_by || (b.status === 'Approved' || b.status === 'Paid' ? 'Approved by Dept Head' : undefined),
+    approvedAt: b.approved_at || undefined,
+    paidBy: b.paid_by || undefined,
+    paidAt: b.paid_at || undefined,
+    disputeReason: b.dispute_reason || undefined,
     semester: b.semester || undefined,
   };
 };
@@ -115,14 +122,53 @@ export const useBilling = () => {
   );
 
   const disputeBill = useCallback(
-    async (billId: string, _reason: string) => {
+    async (billId: string, reason: string) => {
       setIsLoading(true);
       try {
-        await api.post(`/billing/${billId}/approve?action=reject`);
-        // Save dispute details in local storage or notes if necessary
+        await api.post(`/billing/${billId}/approve?action=reject&reason=${encodeURIComponent(reason)}`);
         await refreshClaims();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to dispute bill:', err);
+        throw new Error(err.response?.data?.detail || 'Failed to dispute bill.');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refreshClaims]
+  );
+
+  const directPayout = useCallback(
+    async (billId: string) => {
+      setIsLoading(true);
+      try {
+        await api.post(`/billing/claims/${billId}/direct-payout`);
+        await refreshClaims();
+      } catch (err: any) {
+        console.error('Failed to direct payout bill:', err);
+        throw new Error(err.response?.data?.detail || 'Failed to direct payout bill.');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [refreshClaims]
+  );
+
+  const createManualBill = useCallback(
+    async (payload: { studentId: string; month: string; weekNumber?: number; hoursCompleted: number; hourlyRate?: number; semester?: string }) => {
+      setIsLoading(true);
+      try {
+        await api.post('/billing/manual', {
+          student_id: parseInt(payload.studentId, 10),
+          month: payload.month,
+          week_number: payload.weekNumber,
+          hours_logged: payload.hoursCompleted,
+          hourly_rate: payload.hourlyRate || 150.0,
+          semester: payload.semester || undefined,
+        });
+        await refreshClaims();
+      } catch (err: any) {
+        console.error('Failed to create manual bill:', err);
+        throw new Error(err.response?.data?.detail || 'Failed to create manual bill.');
       } finally {
         setIsLoading(false);
       }
@@ -153,8 +199,10 @@ export const useBilling = () => {
     bills,
     isLoading,
     submitBill,
+    createManualBill,
     verifyByFaculty,
     approveByManager,
+    directPayout,
     disputeBill,
     exportPayrollCsv,
     refreshClaims,

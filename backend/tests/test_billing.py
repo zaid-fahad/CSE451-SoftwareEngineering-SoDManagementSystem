@@ -126,6 +126,7 @@ async def test_billing_claim_and_payroll_lifecycle(db: AsyncSession):
         )
         assert pay_res.status_code == 200
         assert pay_res.json()["status"] == "Paid"
+        assert pay_res.json()["paid_by"] is not None
 
         # 5. Export Payroll CSV report (DeptManager)
         export_res = await ac.get("/api/v1/billing/export", headers=headers_dm)
@@ -137,3 +138,56 @@ async def test_billing_claim_and_payroll_lifecycle(db: AsyncSession):
         assert "Student Worker" in csv_content
         assert "August 2026" in csv_content
         assert "Paid" in csv_content
+
+        # 6. Test weekly hours limit & manual bill creation
+        # By default student worker has weekly_hours_limit = 10.0
+        # Creating a manual claim with 12.0 hours for Week 1 should fail
+        man_fail = await ac.post(
+            "/api/v1/billing/manual",
+            headers=headers_dm,
+            json={
+                "student_id": std_id,
+                "month": "September 2026",
+                "week_number": 1,
+                "hours_logged": 12.0,
+                "hourly_rate": 150.0
+            }
+        )
+        assert man_fail.status_code == 400
+        assert "exceeds" in man_fail.json()["detail"]
+
+        # Dept Manager updates student's weekly limit to 20.0
+        upd_user = await ac.put(
+            f"/api/v1/auth/users/{std_id}",
+            headers=headers_dm,
+            json={"weekly_hours_limit": 20.0}
+        )
+        assert upd_user.status_code == 200
+        assert upd_user.json()["weekly_hours_limit"] == 20.0
+
+        # Now creating manual claim with 12.0 hours succeeds
+        man_succ = await ac.post(
+            "/api/v1/billing/manual",
+            headers=headers_dm,
+            json={
+                "student_id": std_id,
+                "month": "September 2026",
+                "week_number": 1,
+                "hours_logged": 12.0,
+                "hourly_rate": 150.0
+            }
+        )
+        assert man_succ.status_code == 201
+        man_claim_id = man_succ.json()["id"]
+        assert man_succ.json()["week_number"] == 1
+        assert man_succ.json()["amount"] == 12.0 * 150.0
+        assert man_succ.json()["status"] == "Approved"
+
+        # Direct payout by Dept Manager
+        direct_payout_res = await ac.post(
+            f"/api/v1/billing/claims/{man_claim_id}/direct-payout",
+            headers=headers_dm
+        )
+        assert direct_payout_res.status_code == 200
+        assert direct_payout_res.json()["status"] == "Paid"
+        assert direct_payout_res.json()["paid_by"] is not None

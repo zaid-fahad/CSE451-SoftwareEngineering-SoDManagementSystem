@@ -106,6 +106,8 @@ export const useDuties = () => {
         name: s.name,
         email: s.email,
         role: s.role,
+        weekly_hours_limit: s.weekly_hours_limit ?? 10.0,
+        approval_status: s.approval_status ?? 'Approved',
       }));
       setStudents(fetchedStudents);
 

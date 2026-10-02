@@ -8,6 +8,8 @@ export interface User {
   role: UserRole;
   isActive?: boolean;
   rfidTag?: string;
+  weekly_hours_limit?: number;
+  approval_status?: 'Pending' | 'Approved' | 'Rejected';
 }
 
 export interface RegisterRequest {

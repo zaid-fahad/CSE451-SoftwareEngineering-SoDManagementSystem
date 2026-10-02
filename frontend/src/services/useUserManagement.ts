@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { User, UserRole } from '../model/user';
 import { MOCK_STUDENTS } from './useDuties';
 import { api } from './api';
@@ -26,11 +26,34 @@ export interface UpdateUserPayload {
   role: UserRole;
   isActive: boolean;
   rfidTag?: string;
+  weekly_hours_limit?: number;
+  approval_status?: 'Pending' | 'Approved' | 'Rejected';
 }
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await api.get('/auth/users');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setUsers(res.data.map((u: any) => ({
+          id: String(u.id),
+          department_id: u.department_id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          isActive: u.is_active,
+          rfidTag: u.rfid_tag || `RFID-${u.department_id}`,
+          weekly_hours_limit: u.weekly_hours_limit ?? 10.0,
+          approval_status: u.approval_status ?? 'Approved',
+        })));
+      }
+    } catch (err) {
+      console.warn('Backend /auth/users not accessible or mock fallback in use:', err);
+    }
+  }, []);
 
   const addUser = useCallback(async (payload: AddUserPayload): Promise<User> => {
     setIsLoading(true);
@@ -48,6 +71,8 @@ export const useUserManagement = () => {
           role: payload.role,
           isActive: true,
           rfidTag: payload.rfidTag || `RFID-${payload.department_id}`,
+          weekly_hours_limit: 10.0,
+          approval_status: 'Approved',
         };
         setUsers((prev) => [newUser, ...prev]);
         return newUser;
@@ -57,10 +82,26 @@ export const useUserManagement = () => {
     }
   }, []);
 
-  const updateUser = useCallback((userId: string, payload: UpdateUserPayload) => {
+  const updateUser = useCallback(async (userId: string, payload: UpdateUserPayload) => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, ...payload } : u))
     );
+    const numericId = parseInt(userId, 10);
+    if (!isNaN(numericId)) {
+      try {
+        await api.put(`/auth/users/${numericId}`, {
+          name: payload.name,
+          email: payload.email,
+          department_id: payload.department_id,
+          role: payload.role,
+          is_active: payload.isActive,
+          rfid_tag: payload.rfidTag,
+          weekly_hours_limit: payload.weekly_hours_limit,
+        });
+      } catch (err) {
+        console.warn('Backend update user error (state kept in UI):', err);
+      }
+    }
   }, []);
 
   const assignRfidToUser = useCallback((userId: string, rfidTag: string) => {
@@ -90,9 +131,14 @@ export const useUserManagement = () => {
     }
   }, []);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
   return {
     users,
     isLoading,
+    fetchUsers,
     addUser,
     updateUser,
     assignRfidToUser,
