@@ -13,3 +13,4 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     rfid_tag = Column(String, nullable=True)
     weekly_hours_limit = Column(Float, default=10.0, nullable=False)
+    approval_status = Column(String, default="Approved", nullable=False)  # Pending, Approved, Rejected

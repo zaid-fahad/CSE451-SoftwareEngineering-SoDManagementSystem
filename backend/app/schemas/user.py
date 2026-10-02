@@ -19,6 +19,7 @@ class UserResponse(UserBase):
     is_active: bool = True
     rfid_tag: Optional[str] = None
     weekly_hours_limit: float = 10.0
+    approval_status: str = "Approved"
 
     class Config:
         from_attributes = True
@@ -31,6 +32,7 @@ class UserAdminUpdate(BaseModel):
     is_active: Optional[bool] = None
     rfid_tag: Optional[str] = None
     weekly_hours_limit: Optional[float] = None
+    approval_status: Optional[str] = None
 
 class UserProfileUpdate(BaseModel):
     name: str = Field(..., min_length=2, max_length=50)

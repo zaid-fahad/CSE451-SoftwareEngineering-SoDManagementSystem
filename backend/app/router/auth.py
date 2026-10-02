@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional, List
 from app.database import get_db
 from app.model.user import User
 from app.schemas.user import UserCreate, UserResponse, UserLogin, Token
@@ -36,7 +37,8 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         email=user_data.email,
         department_id=user_data.department_id,
         hashed_password=hashed,
-        role="Student"  # Enforces default Student role
+        role="Student",  # Enforces default Student role
+        approval_status="Pending"  # Requires manager approval
     )
 
     db.add(new_user)
@@ -195,10 +197,77 @@ async def admin_update_user(
         target_user.rfid_tag = update_data.rfid_tag
     if update_data.weekly_hours_limit is not None:
         target_user.weekly_hours_limit = update_data.weekly_hours_limit
+    if update_data.approval_status is not None:
+        target_user.approval_status = update_data.approval_status
 
     db.add(target_user)
     await db.commit()
     await db.refresh(target_user)
     return target_user
+
+@router.get("/pending-students", response_model=List[UserResponse])
+async def list_pending_students(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.role not in ["DeptManager", "LabManager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Managers can access pending registrations."
+        )
+
+    result = await db.execute(
+        select(User).where((User.role == "Student") & (User.approval_status == "Pending"))
+    )
+    return result.scalars().all()
+
+@router.post("/students/{user_id}/approve", response_model=UserResponse)
+async def approve_student_registration(
+    user_id: int,
+    weekly_hours_limit: Optional[float] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.role not in ["DeptManager", "LabManager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Managers can approve student registrations."
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    student = result.scalars().first()
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
+
+    student.approval_status = "Approved"
+    if weekly_hours_limit is not None:
+        student.weekly_hours_limit = weekly_hours_limit
+
+    db.add(student)
+    await db.commit()
+    await db.refresh(student)
+    return student
+
+@router.post("/students/{user_id}/reject", response_model=dict)
+async def reject_student_registration(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.role not in ["DeptManager", "LabManager"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Managers can reject student registrations."
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    student = result.scalars().first()
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
+
+    student.approval_status = "Rejected"
+    db.add(student)
+    await db.commit()
+    return {"status": "success", "message": f"Registration for {student.name} has been rejected."}
 
 

@@ -257,4 +257,55 @@ async def test_dept_manager_reset_user_password(db: AsyncSession):
         assert new_login.status_code == 200
         assert "access_token" in new_login.json()
 
+@pytest.mark.asyncio
+async def test_student_pending_approval_workflow(db: AsyncSession):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # 1. Self-register a student -> should be Pending
+        reg_res = await ac.post(
+            "/api/v1/auth/register",
+            json={
+                "name": "Applicant Student",
+                "email": "applicant@iub.edu.bd",
+                "department_id": "22-77777-2",
+                "password": "applicant_pass"
+            }
+        )
+        assert reg_res.status_code == 201
+        applicant_id = reg_res.json()["id"]
+        assert reg_res.json()["approval_status"] == "Pending"
+
+        # 2. Dept Manager logs in
+        mgr = User(
+            name="Dept Chair",
+            email="dept_chair@univ.edu",
+            department_id="DMGR-TEST-02",
+            hashed_password=hash_password("chair_pass"),
+            role="DeptManager"
+        )
+        db.add(mgr)
+        await db.commit()
+
+        login_mgr = await ac.post("/api/v1/auth/login", json={"email": "dept_chair@univ.edu", "password": "chair_pass"})
+        mgr_token = login_mgr.json()["access_token"]
+        mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
+
+        # 3. List pending students
+        pending_res = await ac.get("/api/v1/auth/pending-students", headers=mgr_headers)
+        assert pending_res.status_code == 200
+        pending_ids = [s["id"] for s in pending_res.json()]
+        assert applicant_id in pending_ids
+
+        # 4. Approve student with 15.0 weekly hours limit
+        approve_res = await ac.post(
+            f"/api/v1/auth/students/{applicant_id}/approve?weekly_hours_limit=15.0",
+            headers=mgr_headers
+        )
+        assert approve_res.status_code == 200
+        assert approve_res.json()["approval_status"] == "Approved"
+        assert approve_res.json()["weekly_hours_limit"] == 15.0
+
+        # Verify no longer in pending list
+        pending_after = await ac.get("/api/v1/auth/pending-students", headers=mgr_headers)
+        assert applicant_id not in [s["id"] for s in pending_after.json()]
+
 

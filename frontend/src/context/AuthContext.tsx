@@ -13,6 +13,7 @@ interface AuthContextType {
   switchRole: (role: UserRole) => void;
   updateProfile: (data: { name: string; email: string }) => Promise<void>;
   changePassword: (data: { current_password: string; new_password: string }) => Promise<void>;
+  refreshUser: () => Promise<User | null>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,6 +113,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await api.post('/auth/change-password', data);
   };
 
+  const refreshUser = async (): Promise<User | null> => {
+    try {
+      const res = await api.get<User>('/auth/me');
+      setUser(res.data);
+      return res.data;
+    } catch {
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -125,6 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         switchRole,
         updateProfile,
         changePassword,
+        refreshUser,
       }}
     >
       {children}
