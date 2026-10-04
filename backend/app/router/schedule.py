@@ -16,7 +16,8 @@ from app.services.parser import parse_iras_schedule
 from app.services.features import require_feature
 from app.services.semesters import (
     get_active_semester,
-    is_onboarding_open_for_semester
+    is_onboarding_open_for_semester,
+    is_semester_archived
 )
 
 router = APIRouter(prefix="/schedule", tags=["Schedules"])
@@ -39,6 +40,13 @@ async def parse_schedule(
     if not target_semester:
         active_sem = await get_active_semester(db)
         target_semester = active_sem.name if active_sem else "Autumn 2026"
+
+    # Enforce archived semester lock
+    if await is_semester_archived(target_semester, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Semester '{target_semester}' has concluded and is archived for record keeping. Timetable schedules cannot be modified."
+        )
 
     # Enforce semester schedule onboarding status check
     is_open = await is_onboarding_open_for_semester(target_semester, db)
@@ -125,6 +133,13 @@ async def toggle_override(
     if not target_semester:
         active_sem = await get_active_semester(db)
         target_semester = active_sem.name if active_sem else "Autumn 2026"
+
+    # Enforce archived semester lock
+    if await is_semester_archived(target_semester, db):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Semester '{target_semester}' has concluded and is archived for record keeping. Availability cannot be modified."
+        )
 
     # Enforce semester schedule onboarding status check
     is_open = await is_onboarding_open_for_semester(target_semester, db)
@@ -231,6 +246,14 @@ async def manager_override_schedule(
     if not target_semester:
         active_sem = await get_active_semester(db)
         target_semester = active_sem.name if active_sem else "Autumn 2026"
+
+    # Enforce archived semester lock (DeptManager emergency override only)
+    if await is_semester_archived(target_semester, db):
+        if current_user.role != "DeptManager":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Semester '{target_semester}' has concluded and is archived for record keeping. Only Department Managers can perform emergency overrides."
+            )
 
     applied_count = 0
     for item in request.overrides:

@@ -20,6 +20,10 @@ import { MasterCalendarPage } from './pages/MasterCalendarPage';
 import { AttendanceManagerPage } from './pages/AttendanceManagerPage';
 import { SystemSettingsPage } from './pages/SystemSettingsPage';
 import { SemesterManagementPage } from './pages/SemesterManagementPage';
+import { HistoricalArchiveHubPage } from './pages/HistoricalArchiveHubPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { PendingApprovalPage } from './pages/PendingApprovalPage';
+import { FacultyRegisterPage } from './pages/FacultyRegisterPage';
 import { ProtectedRoute } from './component/Auth/ProtectedRoute';
 
 export const App: React.FC = () => {
@@ -42,7 +46,9 @@ export const App: React.FC = () => {
                 </FeatureGuardedRoute>
               }
             />
+            <Route path="/register/faculty" element={<FacultyRegisterPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
             {/* Protected Routes wrapped inside Enterprise AppLayout */}
             <Route
@@ -51,6 +57,16 @@ export const App: React.FC = () => {
                 <ProtectedRoute>
                   <AppLayout>
                     <Dashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ProfilePage />
                   </AppLayout>
                 </ProtectedRoute>
               }
@@ -189,6 +205,16 @@ export const App: React.FC = () => {
                 <ProtectedRoute allowedRoles={['DeptManager']}>
                   <AppLayout>
                     <SemesterManagementPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/archive"
+              element={
+                <ProtectedRoute allowedRoles={['DeptManager', 'LabManager', 'Faculty']}>
+                  <AppLayout>
+                    <HistoricalArchiveHubPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

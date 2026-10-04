@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useDuties, MOCK_STUDENTS } from '../services/useDuties';
 import { DAYS, HOURS } from '../services/useSchedule';
 import { AvailabilityGrid } from '../component/Schedule/AvailabilityGrid';
@@ -7,16 +8,18 @@ import { useSemesters } from '../context/SemesterContext';
 import { useAuth } from '../services/useAuth';
 import { api } from '../services/api';
 import { AvailabilitySlot } from '../model/schedule';
+import { User as UserModel } from '../model/user';
+import { DataTable, ColumnDef } from '../component/UI/DataTable';
 import {
   CalendarSearch,
   User,
   ArrowLeft,
   Calendar,
-  Search,
   GraduationCap,
   Edit3,
   CheckCircle2,
   Filter,
+  Archive,
 } from 'lucide-react';
 import { Button } from '../component/UI/Button';
 
@@ -46,16 +49,22 @@ const get24HourRange = (timeLabel: string): { start24: string; end24: string } =
 export const StudentCalendarInspector: React.FC = () => {
   const { user } = useAuth();
   const { semesters, activeSemester } = useSemesters();
-  const [selectedSemester, setSelectedSemester] = useState<string>('');
+  const [searchParams] = useSearchParams();
+  const urlSemester = searchParams.get('semester');
+
+  const [selectedSemester, setSelectedSemester] = useState<string>(urlSemester || '');
 
   useEffect(() => {
-    if (activeSemester && !selectedSemester) {
+    if (urlSemester) {
+      setSelectedSemester(urlSemester);
+    } else if (activeSemester && !selectedSemester) {
       setSelectedSemester(activeSemester.name);
+    } else if (!selectedSemester && semesters.length > 0) {
+      setSelectedSemester(semesters[0].name);
     }
-  }, [activeSemester, selectedSemester]);
+  }, [urlSemester, activeSemester, selectedSemester, semesters]);
 
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [studentSlots, setStudentSlots] = useState<AvailabilitySlot[]>([]);
   const [isOverrideModalOpen, setIsOverrideModalOpen] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -71,14 +80,93 @@ export const StudentCalendarInspector: React.FC = () => {
   const allStudents = students && students.length > 0 ? students : MOCK_STUDENTS;
   const selectedStudent = allStudents.find((s) => String(s.id) === String(selectedStudentId));
 
-  const filteredStudents = allStudents.filter((st) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      st.name.toLowerCase().includes(q) ||
-      st.email.toLowerCase().includes(q) ||
-      (st.department_id && st.department_id.toLowerCase().includes(q))
-    );
-  });
+  const studentDirectoryColumns: ColumnDef<UserModel>[] = [
+    {
+      key: 'profile',
+      header: 'Student Profile',
+      sortable: true,
+      accessor: (st) => st.name,
+      render: (st) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 text-blue-800 flex items-center justify-center font-bold text-xs">
+            {st.name.split(' ').map((n) => n[0]).join('')}
+          </div>
+          <div>
+            <div className="font-bold text-slate-900 text-sm">{st.name}</div>
+            <div className="text-[11px] text-slate-500 font-mono">ID: {st.department_id || 'N/A'}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'University Email',
+      sortable: true,
+      accessor: (st) => st.email,
+      render: (st) => <span className="font-medium text-slate-700">{st.email}</span>,
+    },
+    {
+      key: 'duties',
+      header: `Assigned Duties (${selectedSemester || 'Current'})`,
+      sortable: true,
+      align: 'center',
+      accessor: (st) =>
+        duties.filter((d) =>
+          d.assignedStudents.some((s) => String(s.id) === String(st.id) || s.email === st.email)
+        ).length,
+      render: (st) => {
+        const studentDuties = duties.filter((d) =>
+          d.assignedStudents.some((s) => String(s.id) === String(st.id) || s.email === st.email)
+        );
+        return (
+          <span className="px-2.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-800 font-bold text-[11px]">
+            {studentDuties.length} Duties
+          </span>
+        );
+      },
+    },
+    {
+      key: 'faculty',
+      header: 'Supervising Faculty',
+      sortable: true,
+      accessor: (st) => {
+        const studentDuties = duties.filter((d) =>
+          d.assignedStudents.some((s) => String(s.id) === String(st.id) || s.email === st.email)
+        );
+        const supervisorNames = Array.from(new Set(studentDuties.map((d) => d.assignedFaculty).filter(Boolean)));
+        return supervisorNames.join(', ');
+      },
+      render: (st) => {
+        const studentDuties = duties.filter((d) =>
+          d.assignedStudents.some((s) => String(s.id) === String(st.id) || s.email === st.email)
+        );
+        const supervisorNames = Array.from(new Set(studentDuties.map((d) => d.assignedFaculty).filter(Boolean)));
+        return supervisorNames.length > 0 ? (
+          <div className="text-[11px] font-medium text-purple-800 flex items-center gap-1">
+            <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
+            <span>{supervisorNames.join(', ')}</span>
+          </div>
+        ) : (
+          <span className="text-slate-400 text-[11px]">Unassigned</span>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Timetable Action',
+      align: 'center',
+      render: (st) => (
+        <Button
+          variant="primary"
+          onClick={() => setSelectedStudentId(String(st.id))}
+          className="!py-1.5 !px-3 text-xs gap-1.5"
+        >
+          <Calendar className="w-3.5 h-3.5" />
+          <span>Inspect Timetable Calendar</span>
+        </Button>
+      ),
+    },
+  ];
 
   const fetchStudentSchedule = useCallback(async () => {
     if (!selectedStudentId) return;
@@ -158,6 +246,10 @@ export const StudentCalendarInspector: React.FC = () => {
     setTimeout(() => setToastMsg(null), 3500);
   };
 
+  const selectedSemObj = semesters.find((s) => s.name === selectedSemester);
+  const isArchived = Boolean(selectedSemObj?.is_archived);
+  const isDeptManager = user?.role === 'DeptManager';
+
   const isManager = user?.role === 'LabManager' || user?.role === 'DeptManager';
 
   return (
@@ -194,7 +286,7 @@ export const StudentCalendarInspector: React.FC = () => {
             >
               {semesters.map((sem) => (
                 <option key={sem.id} value={sem.name}>
-                  {sem.name} {sem.is_active ? '(Active)' : ''}
+                  {sem.name} {sem.is_archived ? '(Archived)' : sem.is_active ? '★ (Active)' : ''}
                 </option>
               ))}
             </select>
@@ -213,108 +305,42 @@ export const StudentCalendarInspector: React.FC = () => {
         </div>
       </div>
 
+      {/* Historical Archive Banner */}
+      {isArchived && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Archive className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>
+              <strong>Historical Student Timetable Archive (Read-Only):</strong> Semester <strong>'{selectedSemester}'</strong> has concluded and is archived. Student availability, class schedules, and busy slots are locked as historical records.
+              {isDeptManager ? ' As DeptManager, you have emergency override authority.' : ' Modifications are restricted.'}
+            </span>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0 uppercase tracking-wider">
+            Archived Schedules
+          </span>
+        </div>
+      )}
+
       {/* View 1: Searchable Student Directory Table View */}
       {!selectedStudent ? (
-        <div className="card-enterprise p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                Student Directory ({filteredStudents.length} Students Enrolled)
-              </h2>
-              <p className="text-xs text-slate-500">
-                Filter by academic semester, search student name, email, or department ID to inspect timetable calendar.
-              </p>
-            </div>
-
-            {/* Live Search Input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search name, email, or dept ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white text-slate-900 text-xs rounded-md py-2 pl-9 pr-3 border border-slate-300 focus:border-blue-600 outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Directory Table View */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse min-w-[700px]">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
-                  <th className="p-3.5 border-r border-slate-200">Student Profile</th>
-                  <th className="p-3.5 border-r border-slate-200">University Email</th>
-                  <th className="p-3.5 border-r border-slate-200 text-center">Assigned Duties ({selectedSemester})</th>
-                  <th className="p-3.5 border-r border-slate-200">Supervising Faculty</th>
-                  <th className="p-3.5 text-center">Timetable Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStudents.map((st) => {
-                  const studentDuties = duties.filter((d) =>
-                    d.assignedStudents.some((s) => String(s.id) === String(st.id) || s.email === st.email)
-                  );
-                  const supervisorNames = Array.from(new Set(studentDuties.map((d) => d.assignedFaculty).filter(Boolean)));
-
-                  return (
-                    <tr key={st.id} className="border-b border-slate-200 last:border-b-0 hover:bg-slate-50 transition-colors">
-                      {/* Student Info */}
-                      <td className="p-3.5 border-r border-slate-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 text-blue-800 flex items-center justify-center font-bold text-xs">
-                            {st.name.split(' ').map((n) => n[0]).join('')}
-                          </div>
-                          <div>
-                            <div className="font-bold text-slate-900 text-sm">{st.name}</div>
-                            <div className="text-[11px] text-slate-500 font-mono">ID: {st.department_id || 'N/A'}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Email */}
-                      <td className="p-3.5 border-r border-slate-200 font-medium text-slate-700">
-                        {st.email}
-                      </td>
-
-                      {/* Assigned Duties */}
-                      <td className="p-3.5 border-r border-slate-200 text-center">
-                        <span className="px-2.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-800 font-bold text-[11px]">
-                          {studentDuties.length} Duties
-                        </span>
-                      </td>
-
-                      {/* Supervising Faculty */}
-                      <td className="p-3.5 border-r border-slate-200">
-                        {supervisorNames.length > 0 ? (
-                          <div className="text-[11px] font-medium text-purple-800 flex items-center gap-1">
-                            <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
-                            <span>{supervisorNames.join(', ')}</span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Unassigned</span>
-                        )}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="p-3.5 text-center">
-                        <Button
-                          variant="primary"
-                          onClick={() => setSelectedStudentId(String(st.id))}
-                          className="!py-1.5 !px-3 text-xs gap-1.5"
-                        >
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>Inspect Timetable Calendar</span>
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <DataTable<UserModel>
+          title="Student Directory"
+          icon={<CalendarSearch className="w-4 h-4 text-blue-600" />}
+          data={allStudents}
+          columns={studentDirectoryColumns}
+          rowKey={(st) => st.id}
+          searchPlaceholder="Search name, email, or dept ID..."
+            searchFilter={(st, q) =>
+              st.name.toLowerCase().includes(q) ||
+              st.email.toLowerCase().includes(q) ||
+              Boolean(st.department_id && st.department_id.toLowerCase().includes(q))
+            }
+            emptyTitle="No students found"
+            emptyDescription="No student assistants match the current search filters."
+            initialSortKey="profile"
+            initialPageSize={10}
+            wrapInCard={true}
+          />
       ) : (
         /* View 2: Student Timetable Calendar Detail */
         <div className="space-y-4 text-left">
@@ -333,14 +359,25 @@ export const StudentCalendarInspector: React.FC = () => {
                 Dept ID: {selectedStudent.department_id || 'N/A'}
               </span>
 
-              {isManager && (
+              {isManager && (!isArchived || isDeptManager) && (
                 <Button
                   variant="primary"
                   onClick={() => setIsOverrideModalOpen(true)}
-                  className="!py-1.5 !px-3 text-xs gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                  className={`!py-1.5 !px-3 text-xs gap-1.5 shadow-xs ${
+                    isArchived
+                      ? 'bg-rose-700 hover:bg-rose-800 text-white'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                  }`}
+                  title={
+                    isArchived
+                      ? 'Archived semester: emergency administrative override privileges active.'
+                      : undefined
+                  }
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit Availability (Manager Override)</span>
+                  <span>
+                    {isArchived ? 'Emergency Override (Archived Term)' : 'Edit Availability (Manager Override)'}
+                  </span>
                 </Button>
               )}
             </div>
@@ -352,7 +389,9 @@ export const StudentCalendarInspector: React.FC = () => {
             onToggleSlot={() => {}}
             isLocked={true}
             lockMessage={
-              isManager
+              isArchived
+                ? `Historical timetable archive for '${selectedSemester}'. Records are locked.`
+                : isManager
                 ? `Viewing student availability for '${selectedSemester}'. Use 'Edit Availability (Manager Override)' above to modify busy slots.`
                 : `Student availability for '${selectedSemester}' is read-only.`
             }

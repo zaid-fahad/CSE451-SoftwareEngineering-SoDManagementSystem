@@ -9,6 +9,7 @@ from app.model.user import User
 from app.schemas.duty import DutyCreate, DutyUpdate, DutyResponse
 from app.services.security import get_current_user
 from app.services.conflict import get_student_schedule_conflict
+from app.services.semesters import is_semester_archived, get_active_semester
 
 router = APIRouter(prefix="/tasks", tags=["Duties & Tasks"])
 
@@ -34,6 +35,20 @@ async def create_duty(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only managers can create duty slots."
         )
+
+    # Determine semester
+    target_semester = duty_data.semester
+    if not target_semester:
+        active_sem = await get_active_semester(db)
+        target_semester = active_sem.name if active_sem else "Autumn 2026"
+
+    # Enforce archived semester lock
+    if await is_semester_archived(target_semester, db):
+        if current_user.role != "DeptManager":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Semester '{target_semester}' has concluded and is archived. Only Department Managers can perform emergency duty changes."
+            )
 
     day_of_week = get_day_name_from_date(duty_data.date)
 
@@ -124,6 +139,14 @@ async def update_duty(
     if not duty:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Duty slot not found.")
 
+    # Enforce archived semester lock
+    if duty.semester and await is_semester_archived(duty.semester, db):
+        if current_user.role != "DeptManager":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Duty slot belongs to archived semester '{duty.semester}'. Records are read-only for audit preservation."
+            )
+
     # Permissions checks:
     # 1. Students can only update status to "Completed" for their assigned duties
     if current_user.role == "Student":
@@ -208,6 +231,14 @@ async def delete_duty(
     duty = result.scalars().first()
     if not duty:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Duty slot not found.")
+
+    # Enforce archived semester lock
+    if duty.semester and await is_semester_archived(duty.semester, db):
+        if current_user.role != "DeptManager":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Cannot delete duty slot from concluded/archived semester '{duty.semester}'."
+            )
 
     await db.delete(duty)
     await db.commit()

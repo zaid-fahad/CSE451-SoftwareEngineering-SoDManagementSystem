@@ -1,18 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../services/useAuth';
 import { useDuties } from '../services/useDuties';
+import { useSemesters } from '../context/SemesterContext';
 import { DAYS, HOURS } from '../services/useSchedule';
 import { DayOfWeek } from '../model/schedule';
 import { DutySlot } from '../model/duty';
 import { CreateDutyModal } from '../component/Duty/CreateDutyModal';
 import { AssignStudentModal } from '../component/Duty/AssignStudentModal';
 import { Button } from '../component/UI/Button';
-import { Calendar, MapPin, Clock, Users, Search, Plus, UserPlus } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, Search, Plus, UserPlus, Filter, Archive } from 'lucide-react';
 
 export const MasterCalendarPage: React.FC = () => {
-  const { duties, students, createDuty, assignStudent, checkStudentConflict } = useDuties();
+  const { user } = useAuth();
+  const { semesters, activeSemester } = useSemesters();
+  const [searchParams] = useSearchParams();
+  const urlSemester = searchParams.get('semester');
+
+  const [selectedSemester, setSelectedSemester] = useState<string>(urlSemester || '');
+
+  useEffect(() => {
+    if (urlSemester) {
+      setSelectedSemester(urlSemester);
+    } else if (activeSemester && !selectedSemester) {
+      setSelectedSemester(activeSemester.name);
+    } else if (!selectedSemester && semesters.length > 0) {
+      setSelectedSemester(semesters[0].name);
+    }
+  }, [urlSemester, activeSemester, selectedSemester, semesters]);
+
+  const { duties, students, createDuty, assignStudent, checkStudentConflict, refreshData } = useDuties();
+
+  useEffect(() => {
+    if (selectedSemester) {
+      refreshData(selectedSemester);
+    }
+  }, [selectedSemester, refreshData]);
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [assignModalDuty, setAssignModalDuty] = useState<DutySlot | null>(null);
+
+  const selectedSemObj = semesters.find((s) => s.name === selectedSemester);
+  const isArchived = Boolean(selectedSemObj?.is_archived);
+  const isDeptManager = user?.role === 'DeptManager';
 
   const filteredDuties = duties.filter((d: DutySlot) => {
     const q = searchQuery.toLowerCase();
@@ -50,13 +81,30 @@ export const MasterCalendarPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Semester Filter Dropdown */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
+            <span className="font-semibold text-slate-600">Semester:</span>
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              className="bg-transparent font-bold text-blue-700 outline-none cursor-pointer"
+            >
+              {semesters.map((sem) => (
+                <option key={sem.id} value={sem.name}>
+                  {sem.name} {sem.is_archived ? '(Archived)' : sem.is_active ? '★ (Active)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Live Search Input */}
-          <div className="relative w-full sm:w-64">
+          <div className="relative w-full sm:w-56">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search master calendar duty..."
+              placeholder="Search duties..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white text-slate-900 text-xs rounded-md py-2 pl-9 pr-3 border border-slate-300 focus:border-blue-600 outline-none"
@@ -66,13 +114,36 @@ export const MasterCalendarPage: React.FC = () => {
           <Button
             variant="primary"
             onClick={() => setIsCreateModalOpen(true)}
-            className="!py-2 !px-4 text-xs gap-1.5 shrink-0"
+            disabled={isArchived && !isDeptManager}
+            className={`!py-2 !px-4 text-xs gap-1.5 shrink-0 ${
+              isArchived && !isDeptManager ? 'opacity-50 cursor-not-allowed bg-slate-400 hover:bg-slate-400' : ''
+            }`}
+            title={
+              isArchived && !isDeptManager
+                ? 'Semester is archived. Only Department Managers can create emergency duty slots.'
+                : undefined
+            }
           >
             <Plus className="w-4 h-4" />
             <span>Create Duty Slot</span>
           </Button>
         </div>
       </div>
+
+      {/* Historical Archive Banner */}
+      {isArchived && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Archive className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>
+              <strong>Historical Master Schedule (Read-Only):</strong> Viewing concluded semester <strong>'{selectedSemester}'</strong>. Departmental duty assignments and room allocations are archived for historical inspection.
+            </span>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0 uppercase tracking-wider">
+            Archived Calendar
+          </span>
+        </div>
+      )}
 
       {/* Metrics Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -145,13 +216,17 @@ export const MasterCalendarPage: React.FC = () => {
                     return (
                       <td key={day} className="p-2 border-r border-slate-200 last:border-r-0 align-top h-24">
                         {cellDuties.length === 0 ? (
-                          <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="w-full h-full rounded border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/40 transition-colors flex items-center justify-center text-[10px] text-slate-400 hover:text-blue-600 gap-1 cursor-pointer"
-                          >
-                            <Plus className="w-3 h-3" />
-                            <span>Add Duty</span>
-                          </button>
+                          !isArchived || isDeptManager ? (
+                            <button
+                              onClick={() => setIsCreateModalOpen(true)}
+                              className="w-full h-full rounded border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/40 transition-colors flex items-center justify-center text-[10px] text-slate-400 hover:text-blue-600 gap-1 cursor-pointer"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Add Duty</span>
+                            </button>
+                          ) : (
+                            <div className="w-full h-full rounded border border-slate-100 bg-slate-50/30" />
+                          )
                         ) : (
                           <div className="space-y-1.5">
                             {cellDuties.map((duty: DutySlot) => {
@@ -183,16 +258,18 @@ export const MasterCalendarPage: React.FC = () => {
                                     </div>
                                   )}
 
-                                  <div className="pt-1">
-                                    <button
-                                      onClick={() => setAssignModalDuty(duty)}
-                                      disabled={isFull}
-                                      className="w-full py-0.5 px-1.5 rounded bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
-                                    >
-                                      <UserPlus className="w-3 h-3" />
-                                      <span>{isFull ? 'Slot Full' : 'Assign Student'}</span>
-                                    </button>
-                                  </div>
+                                  {(!isArchived || isDeptManager) && (
+                                    <div className="pt-1">
+                                      <button
+                                        onClick={() => setAssignModalDuty(duty)}
+                                        disabled={isFull}
+                                        className="w-full py-0.5 px-1.5 rounded bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1"
+                                      >
+                                        <UserPlus className="w-3 h-3" />
+                                        <span>{isFull ? 'Slot Full' : 'Assign Student'}</span>
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -213,7 +290,7 @@ export const MasterCalendarPage: React.FC = () => {
         isOpen={isCreateModalOpen}
         students={students}
         onClose={() => setIsCreateModalOpen(false)}
-        onCreate={createDuty}
+        onCreate={(data) => createDuty({ ...data, semester: selectedSemester })}
       />
 
       <AssignStudentModal

@@ -190,3 +190,34 @@ CSE210L	Labwork based on CSE 210	1	CENLAB3	W:09:40-11:10	12 / 24	50 %	W
     assert any(s["course_code"] == "CSE204" and s["day_of_week"] == "Tuesday" and s["start_time"] == "11:20" for s in slots)
     # Assert Wednesday slot
     assert any(s["course_code"] == "CSE210L" and s["day_of_week"] == "Wednesday" and s["start_time"] == "09:40" for s in slots)
+
+
+def test_parse_iras_schedule_merged_code_title():
+    raw_text = (
+        "Code\tName\tSec\tRoom\tTime\tAttendance*\t%\tGrade\n"
+        "CSE204Digital Logic Design\t1\tBC6012\tST:11:20-12:50\t1 / 9\t11.11%\tZ\n"
+        "CSE204LLabwork based on CSE 204\t3\tCENLAB2\tW:09:40-11:10\t1 / 9\t11.11%\tZ\n"
+        "CSE210Electronics I\t1\tBC6008\tMW:11:20-12:50\t2 / 7\t28.57%\tZ\n"
+        "CSE210LLabwork based on CSE 210\t1\tCENLAB3\tM:13:00-14:30\t2 / 7\t28.57%\tZ\n"
+        "MAT203Linear Algebra- vectors and matrices\t3\tC6005\tMW:14:40-16:10\t3 / 6\t50%\tZ"
+    )
+    slots = parse_iras_schedule(raw_text)
+    # ST -> 2 slots (CSE204: Sun, Tue)
+    # W -> 1 slot (CSE204L: Wed)
+    # MW -> 2 slots (CSE210: Mon, Wed)
+    # M -> 1 slot (CSE210L: Mon)
+    # MW -> 2 slots (MAT203: Mon, Wed)
+    # Total: 2 + 1 + 2 + 1 + 2 = 8 slots
+    assert len(slots) == 8
+
+    # Validate individual extracted codes
+    codes = {s["course_code"] for s in slots}
+    assert codes == {"CSE204", "CSE204L", "CSE210", "CSE210L", "MAT203"}
+
+    # Validate specific slots
+    assert any(s["course_code"] == "CSE204" and s["day_of_week"] == "Sunday" and s["start_time"] == "11:20" and s["end_time"] == "12:50" for s in slots)
+    assert any(s["course_code"] == "CSE204L" and s["day_of_week"] == "Wednesday" and s["start_time"] == "09:40" and s["end_time"] == "11:10" for s in slots)
+    assert any(s["course_code"] == "CSE210" and s["day_of_week"] == "Monday" and s["start_time"] == "11:20" and s["end_time"] == "12:50" for s in slots)
+    assert any(s["course_code"] == "CSE210L" and s["day_of_week"] == "Monday" and s["start_time"] == "13:00" and s["end_time"] == "14:30" for s in slots)
+    assert any(s["course_code"] == "MAT203" and s["day_of_week"] == "Wednesday" and s["start_time"] == "14:40" and s["end_time"] == "16:10" for s in slots)
+

@@ -8,7 +8,7 @@ import { DutySlot } from '../../model/duty';
 import { User } from '../../model/user';
 import { useFeatureFlags } from '../../context/FeatureFlagContext';
 import { useSemesters } from '../../context/SemesterContext';
-import { FileText, ArrowRightLeft, DollarSign, CalendarDays, Lock, CheckCircle2, Calendar } from 'lucide-react';
+import { FileText, ArrowRightLeft, DollarSign, CalendarDays, Lock, CheckCircle2, Calendar, Archive, CalendarCheck } from 'lucide-react';
 
 interface StudentDashboardViewProps {
   user: User | null;
@@ -22,6 +22,8 @@ interface StudentDashboardViewProps {
   onOpenParseModal: () => void;
   onOpenBillModal: () => void;
   onExportPNG: () => void;
+  onOpenOnboardingWizard?: () => void;
+  isOnboardingCompleted?: boolean;
 }
 
 export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
@@ -35,13 +37,16 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
   onLoadDemoData,
   onOpenParseModal,
   onExportPNG,
+  onOpenOnboardingWizard,
+  isOnboardingCompleted = true,
 }) => {
   const { isFeatureEnabled } = useFeatureFlags();
   const { semesters, activeSemester } = useSemesters();
 
   const currentSemesterName = selectedSemester || activeSemester?.name || (semesters[0]?.name ?? 'Autumn 2026');
   const currentSemesterObj = semesters.find((s) => s.name === currentSemesterName) || activeSemester;
-  const isOnboardingOpen = Boolean(currentSemesterObj?.is_onboarding_open);
+  const isArchived = Boolean(currentSemesterObj?.is_archived);
+  const isOnboardingOpen = !isArchived && Boolean(currentSemesterObj?.is_onboarding_open);
 
   return (
     <div className="space-y-6">
@@ -66,7 +71,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
             </Link>
           )}
 
-          {isFeatureEnabled('billing_claims') && (
+          {isFeatureEnabled('billing_claims') && !isArchived && (
             <Link to="/submit-bill">
               <Button
                 variant="outline"
@@ -78,18 +83,37 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
             </Link>
           )}
 
+          {isFeatureEnabled('iras_schedule_parser') && onOpenOnboardingWizard && (
+            <Button
+              variant="outline"
+              onClick={onOpenOnboardingWizard}
+              disabled={!isOnboardingOpen || isArchived}
+              className={`!py-2 !px-3 text-xs gap-1.5 text-blue-700 border-blue-200 hover:bg-blue-50 bg-blue-50/30 font-semibold ${
+                !isOnboardingOpen || isArchived
+                  ? 'opacity-50 cursor-not-allowed'
+                  : ''
+              }`}
+              title="Launch guided onboarding: import IRAS timetable and configure busy slots"
+            >
+              <CalendarCheck className="w-4 h-4 text-blue-600" />
+              <span>Schedule Onboarding</span>
+            </Button>
+          )}
+
           {isFeatureEnabled('iras_schedule_parser') && (
             <Button
               variant="primary"
               onClick={onOpenParseModal}
-              disabled={!isOnboardingOpen}
+              disabled={!isOnboardingOpen || isArchived}
               className={`!py-2 !px-3 text-xs gap-1.5 ${
-                !isOnboardingOpen
+                !isOnboardingOpen || isArchived
                   ? 'opacity-50 cursor-not-allowed bg-slate-400 hover:bg-slate-400'
                   : ''
               }`}
               title={
-                !isOnboardingOpen
+                isArchived
+                  ? 'Semester has concluded and is archived. Historical routines cannot be edited.'
+                  : !isOnboardingOpen
                   ? 'Schedule onboarding is closed for this semester. Timetable parsing is disabled.'
                   : 'Parse your IRAS routine text to automatically fill class slots.'
               }
@@ -100,6 +124,48 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Onboarding Callout Banner if not completed */}
+      {!isOnboardingCompleted && isOnboardingOpen && !isArchived && onOpenOnboardingWizard && (
+        <div className="card-enterprise p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-left bg-blue-50/40 border-blue-200 animate-fadeIn">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200">
+              <CalendarCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-slate-900 text-xs">
+                Academic Availability Setup Required ({currentSemesterName})
+              </div>
+              <p className="text-[11px] text-slate-600 mt-0.5">
+                Import your IRAS class schedule to protect lecture hours and register your weekly busy slots before shift assignments begin.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            onClick={onOpenOnboardingWizard}
+            className="!py-1.5 !px-3.5 text-xs font-semibold gap-1.5 shrink-0"
+          >
+            <CalendarCheck className="w-3.5 h-3.5" />
+            <span>Complete Setup</span>
+          </Button>
+        </div>
+      )}
+
+      {/* Historical Archive Banner */}
+      {isArchived && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-left shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Archive className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>
+              <strong>Historical Archive (Read-Only):</strong> Academic semester <strong>'{currentSemesterName}'</strong> has concluded and is archived. All records are maintained in read-only mode for audit and verification purposes.
+            </span>
+          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900 font-bold text-[10px] shrink-0 uppercase tracking-wider">
+            Concluded Term
+          </span>
+        </div>
+      )}
 
       {/* Semester Context & Onboarding State Bar */}
       <div className="card-enterprise p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
@@ -120,7 +186,7 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
                 >
                   {semesters.map((sem) => (
                     <option key={sem.id} value={sem.name}>
-                      {sem.name} {sem.is_active ? '★ (Active)' : ''}
+                      {sem.name} {sem.is_archived ? '(Archived Record)' : sem.is_active ? '★ (Active)' : ''}
                     </option>
                   ))}
                 </select>
@@ -133,7 +199,12 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
 
         {/* Onboarding Status Chip */}
         <div>
-          {isOnboardingOpen ? (
+          {isArchived ? (
+            <div className="px-3.5 py-1.5 bg-slate-100 border border-slate-300 text-slate-700 rounded-full text-xs font-semibold flex items-center gap-2 shadow-xs">
+              <Archive className="w-3.5 h-3.5 text-slate-500" />
+              <span>Concluded & Archived: Read-Only Record</span>
+            </div>
+          ) : isOnboardingOpen ? (
             <div className="px-3.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-full text-xs font-semibold flex items-center gap-2 shadow-xs">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -156,8 +227,12 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
           onResetGrid={onResetGrid}
           onLoadDemoData={onLoadDemoData}
           onExportPNG={onExportPNG}
-          isLocked={!isOnboardingOpen}
-          lockMessage={`Schedule onboarding for '${currentSemesterName}' has closed. Your availability slots cannot be modified directly. Contact your Department Manager or Lab Manager to request a manual override.`}
+          isLocked={!isOnboardingOpen || isArchived}
+          lockMessage={
+            isArchived
+              ? `Semester '${currentSemesterName}' has concluded and is archived. This timetable is preserved as a permanent historical record and cannot be changed.`
+              : `Schedule onboarding for '${currentSemesterName}' has closed. Your availability slots cannot be modified directly. Contact your Department Manager or Lab Manager to request a manual override.`
+          }
         />
       </div>
 

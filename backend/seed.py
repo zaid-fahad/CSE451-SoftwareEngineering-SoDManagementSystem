@@ -9,6 +9,7 @@ from app.model.notification import Notification
 from app.model.billing import BillingClaim
 from app.model.feature_flag import FeatureFlag
 from app.model.semester import Semester
+from app.model.invite_token import InviteToken
 from app.services.security import hash_password
 from app.services.features import init_feature_flags
 from app.services.semesters import init_semesters
@@ -21,6 +22,7 @@ async def seed_data():
 
     async with AsyncSessionLocal() as session:
         print("Purging existing data...")
+        await session.execute(InviteToken.__table__.delete())
         await session.execute(BillingClaim.__table__.delete())
         await session.execute(Notification.__table__.delete())
         await session.execute(Swap.__table__.delete())
@@ -63,27 +65,33 @@ async def seed_data():
 
         print("Inserting Academic Schedules & Overrides...")
         schedules = [
+            # Autumn 2026 (Active)
             # Alice: Classes
-            Schedule(student_id=alice.id, day_of_week="Monday", start_time="09:00", end_time="11:00", course_code="CSE451", is_override=False),
-            Schedule(student_id=alice.id, day_of_week="Wednesday", start_time="11:00", end_time="13:00", course_code="CSE302", is_override=False),
+            Schedule(student_id=alice.id, day_of_week="Monday", start_time="09:00", end_time="11:00", course_code="CSE451", is_override=False, semester="Autumn 2026"),
+            Schedule(student_id=alice.id, day_of_week="Wednesday", start_time="11:00", end_time="13:00", course_code="CSE302", is_override=False, semester="Autumn 2026"),
             # Alice: Manual override
-            Schedule(student_id=alice.id, day_of_week="Friday", start_time="14:00", end_time="15:00", is_override=True),
+            Schedule(student_id=alice.id, day_of_week="Friday", start_time="14:00", end_time="15:00", is_override=True, semester="Autumn 2026"),
 
             # Bob: Classes
-            Schedule(student_id=bob.id, day_of_week="Monday", start_time="13:00", end_time="15:00", course_code="MAT203", is_override=False),
-            Schedule(student_id=bob.id, day_of_week="Wednesday", start_time="14:00", end_time="16:00", course_code="PHY101", is_override=False),
+            Schedule(student_id=bob.id, day_of_week="Monday", start_time="13:00", end_time="15:00", course_code="MAT203", is_override=False, semester="Autumn 2026"),
+            Schedule(student_id=bob.id, day_of_week="Wednesday", start_time="14:00", end_time="16:00", course_code="PHY101", is_override=False, semester="Autumn 2026"),
             # Bob: Manual override
-            Schedule(student_id=bob.id, day_of_week="Monday", start_time="09:00", end_time="11:00", is_override=True),
+            Schedule(student_id=bob.id, day_of_week="Monday", start_time="09:00", end_time="11:00", is_override=True, semester="Autumn 2026"),
 
             # Charlie: Classes
-            Schedule(student_id=charlie.id, day_of_week="Tuesday", start_time="09:00", end_time="11:00", course_code="CSE110", is_override=False),
-            Schedule(student_id=charlie.id, day_of_week="Friday", start_time="10:00", end_time="12:00", course_code="CSE220", is_override=False),
+            Schedule(student_id=charlie.id, day_of_week="Tuesday", start_time="09:00", end_time="11:00", course_code="CSE110", is_override=False, semester="Autumn 2026"),
+            Schedule(student_id=charlie.id, day_of_week="Friday", start_time="10:00", end_time="12:00", course_code="CSE220", is_override=False, semester="Autumn 2026"),
+
+            # Summer 2026 (Archived Historical Schedules)
+            Schedule(student_id=alice.id, day_of_week="Sunday", start_time="10:00", end_time="12:00", course_code="CSE201", is_override=False, semester="Summer 2026"),
+            Schedule(student_id=bob.id, day_of_week="Tuesday", start_time="11:00", end_time="13:00", course_code="CSE205", is_override=False, semester="Summer 2026"),
         ]
         session.add_all(schedules)
         await session.commit()
 
         print("Inserting Duties...")
         duties = [
+            # Autumn 2026 Duties
             Duty(
                 title="Software Engineering Lab Assistance",
                 date="2026-08-03",  # Monday
@@ -91,7 +99,8 @@ async def seed_data():
                 start_time="13:00",
                 end_time="15:00",
                 assigned_student_id=alice.id,
-                notes='{"location": "Lab Room 302", "type": "LabDuty", "assignedFaculty": "Dr. Sarah Connor (Faculty)"}'
+                notes='{"location": "Lab Room 302", "type": "LabDuty", "assignedFaculty": "Dr. Sarah Connor (Faculty)"}',
+                semester="Autumn 2026"
             ),
             Duty(
                 title="Database System Lab Support",
@@ -100,7 +109,8 @@ async def seed_data():
                 start_time="09:00",
                 end_time="11:00",
                 assigned_student_id=bob.id,
-                notes='{"location": "Lab Room 304", "type": "LabDuty", "assignedFaculty": "Dr. Sarah Connor (Faculty)"}'
+                notes='{"location": "Lab Room 304", "type": "LabDuty", "assignedFaculty": "Dr. Sarah Connor (Faculty)"}',
+                semester="Autumn 2026"
             ),
             Duty(
                 title="Hardware Inventory Audit",
@@ -109,7 +119,8 @@ async def seed_data():
                 start_time="14:00",
                 end_time="16:00",
                 assigned_student_id=charlie.id,
-                notes='{"location": "Store Room 104", "type": "GeneralDuty", "assignedFaculty": "Prof. Alan Turing (Manager)"}'
+                notes='{"location": "Store Room 104", "type": "GeneralDuty", "assignedFaculty": "Prof. Alan Turing (Manager)"}',
+                semester="Autumn 2026"
             ),
             Duty(
                 title="Linear Algebra Exam Invigilation",
@@ -118,7 +129,32 @@ async def seed_data():
                 start_time="14:00",
                 end_time="16:00",
                 assigned_student_id=diana.id,
-                notes='{"location": "Auditorium B", "type": "ExamDuty", "assignedFaculty": "Prof. Alan Turing (Manager)"}'
+                notes='{"location": "Auditorium B", "type": "ExamDuty", "assignedFaculty": "Prof. Alan Turing (Manager)"}',
+                semester="Autumn 2026"
+            ),
+
+            # Summer 2026 (Archived Historical Duties)
+            Duty(
+                title="Algorithms Lab Supervision",
+                date="2026-07-15",
+                day_of_week="Wednesday",
+                start_time="10:00",
+                end_time="12:00",
+                assigned_student_id=alice.id,
+                status="Completed",
+                notes='{"location": "Lab Room 201", "type": "LabDuty", "assignedFaculty": "Dr. Sarah Connor (Faculty)"}',
+                semester="Summer 2026"
+            ),
+            Duty(
+                title="Final Term Exam Proctoring",
+                date="2026-07-22",
+                day_of_week="Wednesday",
+                start_time="13:00",
+                end_time="16:00",
+                assigned_student_id=bob.id,
+                status="Completed",
+                notes='{"location": "Auditorium A", "type": "ExamDuty", "assignedFaculty": "Prof. Alan Turing (Manager)"}',
+                semester="Summer 2026"
             ),
         ]
         session.add_all(duties)
@@ -170,10 +206,13 @@ async def seed_data():
 
         print("Inserting Billing Claims...")
         claims = [
-            BillingClaim(student_id=alice.id, month="June 2026", hours_logged=24.0, hourly_rate=150.0, amount=3600.0, status="Paid"),
-            BillingClaim(student_id=bob.id, month="July 2026", hours_logged=18.0, hourly_rate=150.0, amount=2700.0, status="Verified"),
-            BillingClaim(student_id=charlie.id, month="July 2026", hours_logged=30.0, hourly_rate=150.0, amount=4500.0, status="Pending"),
-            BillingClaim(student_id=diana.id, month="July 2026", hours_logged=12.0, hourly_rate=150.0, amount=1800.0, status="Rejected"),
+            # Summer 2026 Historical Claims
+            BillingClaim(student_id=alice.id, month="June 2026", hours_logged=24.0, hourly_rate=150.0, amount=3600.0, status="Paid", semester="Summer 2026"),
+            BillingClaim(student_id=bob.id, month="July 2026", hours_logged=18.0, hourly_rate=150.0, amount=2700.0, status="Paid", semester="Summer 2026"),
+
+            # Autumn 2026 Active Claims
+            BillingClaim(student_id=charlie.id, month="September 2026", hours_logged=30.0, hourly_rate=150.0, amount=4500.0, status="Pending", semester="Autumn 2026"),
+            BillingClaim(student_id=diana.id, month="September 2026", hours_logged=12.0, hourly_rate=150.0, amount=1800.0, status="Rejected", semester="Autumn 2026"),
         ]
         session.add_all(claims)
         await session.commit()

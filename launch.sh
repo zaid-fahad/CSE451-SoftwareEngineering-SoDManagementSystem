@@ -65,7 +65,8 @@ print_help() {
     echo "  all (default)  Launch both FastAPI backend and Vite frontend"
     echo "  backend        Launch FastAPI backend only on port 8000"
     echo "  frontend       Launch Vite frontend only on port 3000"
-    echo "  seed           Seed or reset SQLite database with demo accounts"
+    echo "  seed           Seed or reset database with demo accounts"
+    echo "  docker         Run PostgreSQL & Backend via docker compose"
     echo "  help           Display this help information"
     echo ""
 }
@@ -178,6 +179,11 @@ case "$MODE" in
         ;;
     seed)
         run_seed
+        ;;
+    docker)
+        print_banner
+        echo -e "${GREEN}==> Launching PostgreSQL and Backend via Docker Compose...${NC}"
+        docker compose up --build
         ;;
     help|--help|-h)
         print_help

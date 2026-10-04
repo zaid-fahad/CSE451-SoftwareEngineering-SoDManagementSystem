@@ -15,6 +15,7 @@ from app.services.semesters import (
     get_active_semester,
     create_semester,
     update_semester,
+    archive_semester,
     get_semester_stats
 )
 from app.services.security import require_role
@@ -52,6 +53,15 @@ async def patch_semester(
 ):
     """Update semester properties, including active state and onboarding toggle."""
     return await update_semester(id, data, db)
+
+@router.post("/{id}/archive", response_model=SemesterResponse)
+async def archive_existing_semester(
+    id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(["DeptManager"]))
+):
+    """Conclude and archive an academic semester. Marks it permanently read-only and inactive."""
+    return await archive_semester(id, db)
 
 @router.get("/{id}/stats", response_model=SemesterStatsResponse)
 async def read_semester_stats(

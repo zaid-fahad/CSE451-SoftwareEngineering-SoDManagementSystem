@@ -16,9 +16,40 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     id: int
     role: str
+    is_active: bool = True
+    rfid_tag: Optional[str] = None
+    weekly_hours_limit: float = 10.0
+    approval_status: str = "Approved"
 
     class Config:
         from_attributes = True
+
+class UserAdminUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    department_id: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+    rfid_tag: Optional[str] = None
+    weekly_hours_limit: Optional[float] = None
+    approval_status: Optional[str] = None
+
+class UserProfileUpdate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=50)
+    email: EmailStr
+
+class UserProfileResponse(BaseModel):
+    user: UserResponse
+    access_token: Optional[str] = None
+    token_type: Optional[str] = "bearer"
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=6, max_length=100)
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=6, max_length=100)
 
 class Token(BaseModel):
     access_token: str
@@ -27,3 +58,19 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
     role: Optional[str] = None
+
+class FacultyRegisterRequest(UserCreate):
+    token: str = Field(..., min_length=1)
+
+class InviteTokenResponse(BaseModel):
+    token: str
+    role: str
+    invite_url: str
+    expires_at: Optional[str] = None
+
+class InviteTokenValidateResponse(BaseModel):
+    valid: bool
+    role: str
+    expires_at: Optional[str] = None
+    message: Optional[str] = None
+

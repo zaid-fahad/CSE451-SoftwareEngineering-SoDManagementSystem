@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Edit, AlertCircle } from 'lucide-react';
+import { X, Edit, AlertCircle, CreditCard, ShieldCheck, Clock } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { Input } from '../UI/Input';
 import { User } from '../../model/user';
@@ -24,6 +24,8 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
     department_id: '',
     role: 'Student',
     isActive: true,
+    rfidTag: '',
+    weekly_hours_limit: 10.0,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +38,8 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
         department_id: user.department_id,
         role: user.role,
         isActive: user.isActive !== false,
+        rfidTag: user.rfidTag || `RFID-${user.department_id}`,
+        weekly_hours_limit: user.weekly_hours_limit ?? 10.0,
       });
     }
   }, [user]);
@@ -60,7 +64,10 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
       return;
     }
 
-    onUpdateUser(user.id, formData);
+    onUpdateUser(user.id, {
+      ...formData,
+      rfidTag: formData.rfidTag ? formData.rfidTag.trim().toUpperCase() : `RFID-${formData.department_id}`,
+    });
     onClose();
   };
 
@@ -106,12 +113,23 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
             onChange={handleChange}
           />
 
-          <Input
-            label="Department ID / Roll No"
-            name="department_id"
-            value={formData.department_id}
-            onChange={handleChange}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Department ID"
+              name="department_id"
+              value={formData.department_id}
+              onChange={handleChange}
+            />
+
+            <Input
+              label="RFID Badge UID"
+              name="rfidTag"
+              icon={CreditCard}
+              placeholder="e.g. RFID-001"
+              value={formData.rfidTag || ''}
+              onChange={handleChange}
+            />
+          </div>
 
           <div className="flex flex-col space-y-1.5 w-full text-left">
             <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -140,17 +158,46 @@ export const EditUserModal: React.FC<EditUserModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-2">
-            <input
-              type="checkbox"
-              id="isActive"
-              name="isActive"
-              checked={formData.isActive}
-              onChange={handleChange}
-              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-            />
-            <label htmlFor="isActive" className="text-xs font-semibold text-slate-700 cursor-pointer">
-              Account Active (User can log in and accept duty assignments)
+          {formData.role === 'Student' && (
+            <div className="flex flex-col space-y-1.5 w-full text-left">
+              <Input
+                label="Weekly Duty Hour Limit"
+                id="weekly_hours_limit"
+                name="weekly_hours_limit"
+                type="number"
+                min={1}
+                max={40}
+                step="0.5"
+                icon={Clock}
+                value={String(formData.weekly_hours_limit ?? 10.0)}
+                onChange={(e) => setFormData((prev) => ({ ...prev, weekly_hours_limit: parseFloat(e.target.value) || 0 }))}
+                helperText="Departmental maximum duty hours the student can claim or be scheduled per week."
+              />
+            </div>
+          )}
+
+          {/* Active Account Switch UI */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-slate-200 bg-slate-50/70">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className={`w-4 h-4 ${formData.isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">Account Status</span>
+                <span className="text-[11px] text-slate-500 block">
+                  {formData.isActive ? 'Active — User can sign in and accept duty shifts' : 'Deactivated — User cannot log in'}
+                </span>
+              </div>
+            </div>
+
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                id="isActive"
+                name="isActive"
+                checked={formData.isActive}
+                onChange={handleChange}
+                className="sr-only peer"
+              />
+              <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
             </label>
           </div>
 

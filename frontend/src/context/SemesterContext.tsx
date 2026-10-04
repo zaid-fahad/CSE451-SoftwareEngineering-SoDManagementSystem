@@ -10,6 +10,7 @@ interface SemesterContextType {
   toggleOnboarding: (id: number, currentOpen: boolean) => Promise<void>;
   createSemester: (payload: CreateSemesterPayload) => Promise<Semester>;
   setActiveSemester: (id: number) => Promise<void>;
+  archiveSemester: (id: number) => Promise<Semester>;
   getSemesterStats: (id: number) => Promise<SemesterStats>;
 }
 
@@ -25,7 +26,7 @@ export const SemesterProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const res = await api.get<Semester[]>('/semesters');
       if (res.data) {
         setSemesters(res.data);
-        const active = res.data.find((s) => s.is_active) || res.data[0] || null;
+        const active = res.data.find((s) => s.is_active && !s.is_archived) || null;
         setActiveSemesterState(active);
       }
     } catch (err) {
@@ -70,6 +71,22 @@ export const SemesterProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  const archiveSemester = async (id: number): Promise<Semester> => {
+    try {
+      const res = await api.post<Semester>(`/semesters/${id}/archive`);
+      setSemesters((prev) =>
+        prev.map((s) => (s.id === id ? res.data : s))
+      );
+      if (activeSemester?.id === id) {
+        setActiveSemesterState(null);
+      }
+      return res.data;
+    } catch (err) {
+      console.error('Failed to archive semester:', err);
+      throw err;
+    }
+  };
+
   const createSemester = async (payload: CreateSemesterPayload): Promise<Semester> => {
     try {
       const res = await api.post<Semester>('/semesters', payload);
@@ -96,6 +113,7 @@ export const SemesterProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         toggleOnboarding,
         createSemester,
         setActiveSemester,
+        archiveSemester,
         getSemesterStats,
       }}
     >

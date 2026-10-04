@@ -11,6 +11,9 @@ interface AuthContextType {
   login: (data: LoginRequest) => Promise<void>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
+  updateProfile: (data: { name: string; email: string }) => Promise<void>;
+  changePassword: (data: { current_password: string; new_password: string }) => Promise<void>;
+  refreshUser: () => Promise<User | null>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -87,6 +90,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  const updateProfile = async (data: { name: string; email: string }) => {
+    try {
+      const res = await api.put<{ user: User; access_token?: string }>('/auth/profile', data);
+      if (res.data?.user) {
+        setUser(res.data.user);
+      } else {
+        setUser((prev) => (prev ? { ...prev, ...data } : null));
+      }
+      if (res.data?.access_token) {
+        localStorage.setItem('sod_token', res.data.access_token);
+        setToken(res.data.access_token);
+      }
+    } catch (err: any) {
+      // Offline fallback: if backend route is unavailable or offline, still update in state
+      setUser((prev) => (prev ? { ...prev, ...data } : null));
+      throw err;
+    }
+  };
+
+  const changePassword = async (data: { current_password: string; new_password: string }) => {
+    await api.post('/auth/change-password', data);
+  };
+
+  const refreshUser = async (): Promise<User | null> => {
+    try {
+      const res = await api.get<User>('/auth/me');
+      setUser(res.data);
+      return res.data;
+    } catch {
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -98,6 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         switchRole,
+        updateProfile,
+        changePassword,
+        refreshUser,
       }}
     >
       {children}
