@@ -1,5 +1,6 @@
 import React from 'react';
 import { Building2, Calendar, ShieldCheck, FileSpreadsheet } from 'lucide-react';
+import { CreditFooter } from '../component/Layout/CreditFooter';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -67,9 +68,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
       </div>
 
       {/* Footer Branding */}
-      <div className="mt-6 text-center text-xs text-slate-500">
-        SoD Management System &copy; {new Date().getFullYear()} • Departmental Operations
-      </div>
+      <CreditFooter className="mt-8 border-t-0 bg-transparent" />
     </div>
   );
 };
