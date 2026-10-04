@@ -3,6 +3,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../services/useAuth';
 import { Clock, ShieldAlert, CheckCircle2, RotateCcw, LogOut, User, Mail, IdCard, AlertCircle, Building2 } from 'lucide-react';
 import { Button } from '../component/UI/Button';
+import { CreditFooter } from '../component/Layout/CreditFooter';
 
 export const PendingApprovalPage: React.FC = () => {
   const { user, isAuthenticated, isLoading, refreshUser, logout } = useAuth();
@@ -213,6 +214,7 @@ export const PendingApprovalPage: React.FC = () => {
           </div>
         </div>
       </div>
+      <CreditFooter className="mt-8 border-t-0 bg-transparent text-slate-400" />
     </div>
   );
 };

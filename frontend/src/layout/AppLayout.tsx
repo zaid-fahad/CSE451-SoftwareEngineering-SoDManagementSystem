@@ -27,6 +27,7 @@ import {
   ChevronRight,
   User as UserIcon,
 } from 'lucide-react';
+import { CreditFooter } from '../component/Layout/CreditFooter';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -476,9 +477,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         )}
 
         {/* Page Content Container */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 text-left">
-          {children}
-        </main>
+        <div className="flex-1 flex flex-col min-w-0">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-6 text-left">
+            {children}
+          </main>
+          <CreditFooter />
+        </div>
 
       </div>
 
