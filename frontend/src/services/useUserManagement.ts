@@ -33,6 +33,7 @@ export interface UpdateUserPayload {
 export const useUserManagement = () => {
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [pendingStudents, setPendingStudents] = useState<User[]>([]);
+  const [pendingFaculty, setPendingFaculty] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchUsers = useCallback(async () => {
@@ -171,19 +172,69 @@ export const useUserManagement = () => {
     await fetchUsers();
   }, [fetchUsers]);
 
+  const fetchPendingFaculty = useCallback(async () => {
+    try {
+      const res = await api.get('/auth/pending-faculty');
+      if (Array.isArray(res.data)) {
+        setPendingFaculty(res.data.map((u: any) => ({
+          id: String(u.id),
+          department_id: u.department_id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          isActive: u.is_active,
+          rfidTag: u.rfid_tag || `RFID-${u.department_id}`,
+          weekly_hours_limit: u.weekly_hours_limit ?? 0,
+          approval_status: u.approval_status ?? 'Pending',
+        })));
+      }
+    } catch (err) {
+      console.warn('Backend /auth/pending-faculty fetch error:', err);
+    }
+  }, []);
+
+  const approveFaculty = useCallback(async (userId: string) => {
+    const numericId = parseInt(userId, 10);
+    if (!isNaN(numericId)) {
+      await api.post(`/auth/users/${numericId}/approve`);
+    }
+    setPendingFaculty((prev) => prev.filter((f) => f.id !== userId));
+    await fetchUsers();
+  }, [fetchUsers]);
+
+  const rejectFaculty = useCallback(async (userId: string) => {
+    const numericId = parseInt(userId, 10);
+    if (!isNaN(numericId)) {
+      await api.post(`/auth/users/${numericId}/reject`);
+    }
+    setPendingFaculty((prev) => prev.filter((f) => f.id !== userId));
+    await fetchUsers();
+  }, [fetchUsers]);
+
+  const generateFacultyInvite = useCallback(async (): Promise<{ token: string; invite_url: string; expires_at?: string }> => {
+    const res = await api.post('/auth/invites/faculty');
+    return res.data;
+  }, []);
+
   useEffect(() => {
     fetchUsers();
     fetchPendingStudents();
-  }, [fetchUsers, fetchPendingStudents]);
+    fetchPendingFaculty();
+  }, [fetchUsers, fetchPendingStudents, fetchPendingFaculty]);
 
   return {
     users,
     pendingStudents,
+    pendingFaculty,
     isLoading,
     fetchUsers,
     fetchPendingStudents,
+    fetchPendingFaculty,
     approveStudent,
     rejectStudent,
+    approveFaculty,
+    rejectFaculty,
+    generateFacultyInvite,
     addUser,
     updateUser,
     assignRfidToUser,

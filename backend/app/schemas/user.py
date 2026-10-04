@@ -58,3 +58,19 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
     role: Optional[str] = None
+
+class FacultyRegisterRequest(UserCreate):
+    token: str = Field(..., min_length=1)
+
+class InviteTokenResponse(BaseModel):
+    token: str
+    role: str
+    invite_url: str
+    expires_at: Optional[str] = None
+
+class InviteTokenValidateResponse(BaseModel):
+    valid: bool
+    role: str
+    expires_at: Optional[str] = None
+    message: Optional[str] = None
+

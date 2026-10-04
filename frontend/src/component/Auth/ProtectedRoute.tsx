@@ -26,7 +26,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user.role === 'Student' && (user.approval_status === 'Pending' || user.approval_status === 'Rejected')) {
+  if ((user.role === 'Student' || user.role === 'Faculty') && (user.approval_status === 'Pending' || user.approval_status === 'Rejected')) {
     return <Navigate to="/pending-approval" replace />;
   }
 
