@@ -10,8 +10,10 @@ import {
   CalendarCheck,
   Calendar,
   Layers,
-  HelpCircle,
   Check,
+  Eye,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { AvailabilitySlot, DayOfWeek } from '../../model/schedule';
@@ -43,15 +45,9 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
   const [isParsing, setIsParsing] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [parsedCount, setParsedCount] = useState<number | null>(null);
+  const [showExamplePreview, setShowExamplePreview] = useState<boolean>(false);
 
   if (!isOpen) return null;
-
-  const sampleIrasText = `PHY101 - MON - 09:00-11:00\nCSE202 - TUE - 14:00-16:00\nCSE451 - SAT - 09:30-11:00\nMAT212 - SUN - 11:30-13:00`;
-
-  const handleUseSample = () => {
-    setRawIrasText(sampleIrasText);
-    setErrorMsg(null);
-  };
 
   const handleParseAndContinue = async () => {
     setErrorMsg(null);
@@ -86,33 +82,33 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
   const freeCount = slots.filter((s) => s.type === 'Free').length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden text-left flex flex-col my-auto max-h-[92vh] animate-fadeIn">
+    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden text-left flex flex-col my-auto max-h-[96vh] sm:max-h-[92vh] animate-fadeIn">
         {/* Professional Flat Header */}
-        <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center shrink-0">
-              <CalendarCheck className="w-5 h-5" />
+        <div className="p-3.5 sm:p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center shrink-0">
+              <CalendarCheck className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-slate-900 leading-tight">
-                  Student Availability & Schedule Setup
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight truncate">
+                  Schedule Onboarding
                 </h3>
-                <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-200 text-slate-800 flex items-center gap-1 font-mono">
+                <span className="px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-semibold bg-slate-200 text-slate-800 flex items-center gap-1 font-mono">
                   <Calendar className="w-3 h-3 text-slate-600" />
                   <span>{semesterName}</span>
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Register your weekly timetable: import class hours from IRAS, then configure personal busy slots.
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate hidden sm:block">
+                Import IRAS classes and configure your weekly busy availability.
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer"
+            className="p-1 sm:p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer shrink-0"
             title="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -120,11 +116,11 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
         </div>
 
         {/* Clean Flat Progress Breadcrumb */}
-        <div className="px-6 py-2.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3 sm:gap-6 w-full max-w-2xl mx-auto text-xs">
+        <div className="px-3 sm:px-6 py-2 sm:py-2.5 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2 sm:gap-6 w-full max-w-2xl mx-auto text-[11px] sm:text-xs">
             {/* Step 1 Indicator */}
             <div
-              className={`flex items-center gap-2 font-semibold ${
+              className={`flex items-center gap-1.5 sm:gap-2 font-semibold ${
                 currentStep === 1
                   ? 'text-blue-700'
                   : currentStep > 1
@@ -143,14 +139,14 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
               >
                 {currentStep > 1 ? <Check className="w-3 h-3 stroke-[2.5]" /> : '1'}
               </div>
-              <span className="hidden sm:inline">1. Import IRAS Routine</span>
+              <span className="truncate">1. IRAS Routine</span>
             </div>
 
-            <div className="flex-1 h-px bg-slate-300" />
+            <div className="flex-1 h-px bg-slate-300 min-w-[12px]" />
 
             {/* Step 2 Indicator */}
             <div
-              className={`flex items-center gap-2 font-semibold ${
+              className={`flex items-center gap-1.5 sm:gap-2 font-semibold ${
                 currentStep === 2
                   ? 'text-blue-700'
                   : currentStep > 2
@@ -169,14 +165,14 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
               >
                 {currentStep > 2 ? <Check className="w-3 h-3 stroke-[2.5]" /> : '2'}
               </div>
-              <span className="hidden sm:inline">2. Add Busy Slots</span>
+              <span className="truncate">2. Busy Slots</span>
             </div>
 
-            <div className="flex-1 h-px bg-slate-300" />
+            <div className="flex-1 h-px bg-slate-300 min-w-[12px]" />
 
             {/* Step 3 Indicator */}
             <div
-              className={`flex items-center gap-2 font-semibold ${
+              className={`flex items-center gap-1.5 sm:gap-2 font-semibold ${
                 currentStep === 3 ? 'text-blue-700' : 'text-slate-500'
               }`}
             >
@@ -189,92 +185,102 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
               >
                 3
               </div>
-              <span className="hidden sm:inline">3. Confirm & Save</span>
+              <span className="truncate">3. Confirm</span>
             </div>
           </div>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 flex-1">
           {/* STEP 1: IMPORT FROM IRAS */}
           {currentStep === 1 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 space-y-1">
+            <div className="space-y-3.5 sm:space-y-4 animate-fadeIn">
+              <div className="p-3 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-xs text-slate-900">
                   <FileText className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>Step 1: Paste Your Official IRAS Class Timetable</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Paste the timetable text from your student IRAS portal. Lectures and labs are automatically identified and locked so you will not be assigned duty shifts during class hours.
+                  Paste the timetable text from your student IRAS portal. Class slots are automatically parsed and locked so duty shifts will not conflict with your classes.
                 </p>
               </div>
 
               {errorMsg && (
-                <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               <div className="space-y-2">
+                {/* Minimal Header Row: Label on Left, Clean View Example Toggle on Right */}
                 <div className="flex items-center justify-between">
                   <label htmlFor="irasScheduleInput" className="font-semibold text-xs text-slate-700 uppercase tracking-wider">
                     Raw Timetable Text <span className="text-rose-500">*</span>
                   </label>
+
                   <button
                     type="button"
-                    onClick={handleUseSample}
-                    className="text-xs text-blue-700 hover:text-blue-900 font-semibold cursor-pointer underline flex items-center gap-1"
+                    onClick={() => setShowExamplePreview(!showExamplePreview)}
+                    className="font-medium text-xs text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer bg-blue-50/70 hover:bg-blue-100/70 px-2 py-0.5 rounded border border-blue-200 transition-colors"
                   >
-                    <span>Insert Sample Template</span>
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>{showExamplePreview ? 'Hide Example' : 'View Example'}</span>
+                    {showExamplePreview ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    )}
                   </button>
                 </div>
 
                 <textarea
                   id="irasScheduleInput"
-                  rows={7}
+                  rows={6}
                   value={rawIrasText}
                   onChange={(e) => {
                     setRawIrasText(e.target.value);
                     if (errorMsg) setErrorMsg(null);
                   }}
                   placeholder="Paste your raw IRAS schedule text block here..."
-                  className="w-full bg-slate-50 text-slate-900 text-xs rounded-xl p-3.5 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none font-mono transition-colors"
+                  className="w-full bg-slate-50 text-slate-900 text-xs rounded-xl p-3 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none font-mono transition-colors"
                 />
 
-                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 flex items-start gap-2">
-                  <HelpCircle className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Accepted Formats:</strong> IRAS portal table copy-pastes or lines formatted as{' '}
-                    <code className="text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                      [CourseCode] - [Day] - [Start]-[End]
-                    </code>{' '}
-                    (e.g.{' '}
-                    <code className="text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                      CSE451 - SAT - 09:30-11:00
-                    </code>
-                    ).
+                {/* Collapsible Example Image Preview */}
+                {showExamplePreview && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-1.5 animate-fadeIn">
+                    <div className="text-[11px] font-semibold text-slate-700">
+                      Example of schedule text to copy from IRAS:
+                    </div>
+                    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white max-h-72 flex items-center justify-center p-1">
+                      <img
+                        src="https://meetchuthere.com/assets/onboarding/paste-schedule-example.png"
+                        alt="Example of schedule text to copy from IRAS"
+                        className="w-full h-auto max-h-64 object-contain"
+                        loading="lazy"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}
 
           {/* STEP 2: ADD BUSY SLOTS */}
           {currentStep === 2 && (
-            <div className="space-y-4 animate-fadeIn">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 space-y-1">
+            <div className="space-y-3.5 sm:space-y-4 animate-fadeIn">
+              <div className="p-3 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-xs text-slate-900">
                   <Clock className="w-4 h-4 text-slate-700 shrink-0" />
                   <span>Step 2: Add Busy Slots & Personal Overrides</span>
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  Your IRAS class slots are parsed and locked in <strong className="text-rose-700">red</strong> below. Click on any free slot to toggle it as <strong className="text-amber-800">Busy (amber)</strong> for your extracurriculars, club activities, or study hours.
+                  Your IRAS class slots are parsed and locked in <strong className="text-rose-700">red</strong> below. Tap or click any free slot to toggle it as <strong className="text-amber-800">Busy (amber)</strong> for other activities.
                 </p>
               </div>
 
               {parsedCount !== null && (
-                <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                <div className="p-2.5 sm:p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>
                     Imported <strong>{parsedCount} class slot{parsedCount === 1 ? '' : 's'}</strong> from IRAS timetable.
@@ -361,10 +367,10 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
+        <div className="p-3 sm:p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
           {currentStep === 1 ? (
-            <div className="flex items-center justify-between w-full">
-              <Button type="button" variant="outline" onClick={onClose} className="!py-2 !px-4 text-xs">
+            <div className="flex items-center justify-between gap-2 w-full">
+              <Button type="button" variant="outline" onClick={onClose} className="!py-2 sm:!py-2 !px-3 sm:!px-4 text-xs">
                 Cancel
               </Button>
               <Button
@@ -372,28 +378,30 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
                 variant="primary"
                 onClick={handleParseAndContinue}
                 isLoading={isParsing}
-                className="!py-2 !px-5 text-xs gap-1.5 font-semibold"
+                className="!py-2 sm:!py-2 !px-3.5 sm:!px-5 text-xs gap-1 sm:gap-1.5 font-semibold"
               >
-                <span>Import & Proceed to Busy Slots</span>
+                <span className="hidden sm:inline">Import &amp; Proceed to Busy Slots</span>
+                <span className="sm:hidden">Import &amp; Continue</span>
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
           ) : currentStep === 2 ? (
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between gap-2 w-full">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setCurrentStep(1)}
-                className="!py-2 !px-4 text-xs gap-1.5"
+                className="!py-2 !px-3 sm:!px-4 text-xs gap-1 sm:gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to IRAS Input</span>
+                <span className="hidden sm:inline">Back to IRAS Input</span>
+                <span className="sm:hidden">Back</span>
               </Button>
               <Button
                 type="button"
                 variant="primary"
                 onClick={handleFinish}
-                className="!py-2 !px-5 text-xs gap-1.5 font-semibold"
+                className="!py-2 !px-3.5 sm:!px-5 text-xs gap-1 sm:gap-1.5 font-semibold"
               >
                 <span>Save Availability</span>
                 <Check className="w-4 h-4" />
@@ -405,9 +413,9 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
                 type="button"
                 variant="primary"
                 onClick={handleFinalDone}
-                className="!py-2 !px-6 text-xs gap-1.5 font-semibold"
+                className="!py-2 !px-4 sm:!px-6 text-xs gap-1.5 font-semibold w-full sm:w-auto justify-center"
               >
-                <span>Confirm & Return to Dashboard</span>
+                <span>Return to Dashboard</span>
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
