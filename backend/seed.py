@@ -9,6 +9,7 @@ from app.model.notification import Notification
 from app.model.billing import BillingClaim
 from app.model.feature_flag import FeatureFlag
 from app.model.semester import Semester
+from app.model.invite_token import InviteToken
 from app.services.security import hash_password
 from app.services.features import init_feature_flags
 from app.services.semesters import init_semesters
@@ -21,6 +22,7 @@ async def seed_data():
 
     async with AsyncSessionLocal() as session:
         print("Purging existing data...")
+        await session.execute(InviteToken.__table__.delete())
         await session.execute(BillingClaim.__table__.delete())
         await session.execute(Notification.__table__.delete())
         await session.execute(Swap.__table__.delete())

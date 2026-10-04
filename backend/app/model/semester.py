@@ -13,7 +13,7 @@ class Semester(Base):
     is_archived = Column(Boolean, default=False, nullable=False)
     start_date = Column(String, nullable=True)  # YYYY-MM-DD
     end_date = Column(String, nullable=True)    # YYYY-MM-DD
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     @property
     def status(self) -> str:

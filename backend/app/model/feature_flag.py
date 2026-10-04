@@ -10,4 +10,4 @@ class FeatureFlag(Base):
     description = Column(String, nullable=False)
     category = Column(String, nullable=False)  # System, Workflows, Hardware, Academic
     enabled = Column(Boolean, default=False, nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

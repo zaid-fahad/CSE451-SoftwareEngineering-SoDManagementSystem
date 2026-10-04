@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sod_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sod_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_production_password}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - sod_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sod_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_production_password}@db:5432/${POSTGRES_DB:-sod_db}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in production}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://your-domain.pages.dev,http://localhost:3000}
+      CORS_ALLOW_CLOUDFLARE_PAGES: ${CORS_ALLOW_CLOUDFLARE_PAGES:-true}
+      FIRST_ADMIN_EMAIL: ${FIRST_ADMIN_EMAIL:-admin@univ.edu}
+      FIRST_ADMIN_PASSWORD: ${FIRST_ADMIN_PASSWORD:-ChangeMeSecurely123!}
+      FIRST_ADMIN_NAME: ${FIRST_ADMIN_NAME:-Department Administrator}
+      FIRST_ADMIN_DEPT_ID: ${FIRST_ADMIN_DEPT_ID:-ADMIN-0001}
+      FIRST_ADMIN_ROLE: ${FIRST_ADMIN_ROLE:-DeptManager}
+      RUN_DEMO_SEED: ${RUN_DEMO_SEED:-false}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - sod_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  sod_network:
+    driver: bridge
