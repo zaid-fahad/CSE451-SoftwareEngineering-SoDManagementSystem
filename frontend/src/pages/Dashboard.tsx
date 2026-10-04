@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../services/useAuth';
 import { useSchedule } from '../services/useSchedule';
 import { useDuties } from '../services/useDuties';
@@ -9,6 +9,7 @@ import { FacultyDashboardView } from '../component/Dashboard/FacultyDashboardVie
 import { LabManagerDashboardView } from '../component/Dashboard/LabManagerDashboardView';
 import { DeptManagerDashboardView } from '../component/Dashboard/DeptManagerDashboardView';
 import { IRASParseModal } from '../component/Schedule/IRASParseModal';
+import { StudentOnboardingWizardModal } from '../component/Schedule/StudentOnboardingWizardModal';
 import { SubmitBillModal } from '../component/Billing/SubmitBillModal';
 import { CreateDutyModal } from '../component/Duty/CreateDutyModal';
 import { BillSubmitPayload } from '../model/billing';
@@ -17,7 +18,7 @@ import { CheckCircle2 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { activeSemester } = useSemesters();
+  const { activeSemester, semesters } = useSemesters();
   const [selectedSemester, setSelectedSemester] = useState<string>('');
 
   const { slots, toggleSlot, parseIRASText, loadDemoData, resetGrid, fetchSchedule } = useSchedule();
@@ -38,9 +39,48 @@ export const Dashboard: React.FC = () => {
   }, [selectedSemester, fetchSchedule, refreshDuties]);
 
   const [isParseModalOpen, setIsParseModalOpen] = useState<boolean>(false);
+  const [isOnboardingWizardOpen, setIsOnboardingWizardOpen] = useState<boolean>(false);
   const [isBillModalOpen, setIsBillModalOpen] = useState<boolean>(false);
   const [isCreateDutyModalOpen, setIsCreateDutyModalOpen] = useState<boolean>(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const onboardStorageKey = user && selectedSemester ? `sod_student_onboarded_${user.id}_${selectedSemester}` : null;
+  const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<boolean>(true);
+  const checkedStudentOnboarding = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (onboardStorageKey) {
+      const isDone = localStorage.getItem(onboardStorageKey) === 'true';
+      setIsOnboardingCompleted(isDone);
+    }
+  }, [onboardStorageKey]);
+
+  // Auto-launch onboarding wizard on student login / first visit to active semester if not completed
+  useEffect(() => {
+    if (user?.role === 'Student' && selectedSemester && onboardStorageKey) {
+      const currentSemObj = semesters.find((s) => s.name === selectedSemester);
+      const isArchived = Boolean(currentSemObj?.is_archived);
+      const checkKey = `${user.id}-${selectedSemester}`;
+
+      if (checkedStudentOnboarding.current !== checkKey) {
+        checkedStudentOnboarding.current = checkKey;
+        const isDone = localStorage.getItem(onboardStorageKey) === 'true';
+        if (!isDone && !isArchived) {
+          setIsOnboardingWizardOpen(true);
+        }
+      }
+    }
+  }, [user, selectedSemester, onboardStorageKey, semesters]);
+
+  const handleCompleteOnboardingWizard = () => {
+    if (onboardStorageKey) {
+      localStorage.setItem(onboardStorageKey, 'true');
+      setIsOnboardingCompleted(true);
+    }
+    setIsOnboardingWizardOpen(false);
+    setToastMsg('Schedule onboarding completed successfully!');
+    setTimeout(() => setToastMsg(null), 3500);
+  };
 
   const role = user?.role || 'Student';
 
@@ -104,6 +144,24 @@ export const Dashboard: React.FC = () => {
           onOpenParseModal={() => setIsParseModalOpen(true)}
           onOpenBillModal={() => setIsBillModalOpen(true)}
           onExportPNG={handleExportPNG}
+          onOpenOnboardingWizard={() => setIsOnboardingWizardOpen(true)}
+          isOnboardingCompleted={isOnboardingCompleted}
+        />
+      )}
+
+      {/* Student Onboarding Wizard Modal */}
+      {role === 'Student' && (
+        <StudentOnboardingWizardModal
+          isOpen={isOnboardingWizardOpen}
+          onClose={() => setIsOnboardingWizardOpen(false)}
+          onComplete={handleCompleteOnboardingWizard}
+          slots={slots}
+          onToggleSlot={(day, time) => toggleSlot(day, time, selectedSemester)}
+          onParse={(rawText) => parseIRASText(rawText, selectedSemester)}
+          semesterName={selectedSemester || activeSemester?.name || 'Autumn 2026'}
+          isOnboardingOpen={Boolean(
+            (semesters.find((s) => s.name === selectedSemester) || activeSemester)?.is_onboarding_open
+          )}
         />
       )}
 

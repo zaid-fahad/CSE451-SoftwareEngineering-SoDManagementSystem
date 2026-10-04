@@ -8,7 +8,7 @@ import { DutySlot } from '../../model/duty';
 import { User } from '../../model/user';
 import { useFeatureFlags } from '../../context/FeatureFlagContext';
 import { useSemesters } from '../../context/SemesterContext';
-import { FileText, ArrowRightLeft, DollarSign, CalendarDays, Lock, CheckCircle2, Calendar, Archive } from 'lucide-react';
+import { FileText, ArrowRightLeft, DollarSign, CalendarDays, Lock, CheckCircle2, Calendar, Archive, CalendarCheck } from 'lucide-react';
 
 interface StudentDashboardViewProps {
   user: User | null;
@@ -22,6 +22,8 @@ interface StudentDashboardViewProps {
   onOpenParseModal: () => void;
   onOpenBillModal: () => void;
   onExportPNG: () => void;
+  onOpenOnboardingWizard?: () => void;
+  isOnboardingCompleted?: boolean;
 }
 
 export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
@@ -35,6 +37,8 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
   onLoadDemoData,
   onOpenParseModal,
   onExportPNG,
+  onOpenOnboardingWizard,
+  isOnboardingCompleted = true,
 }) => {
   const { isFeatureEnabled } = useFeatureFlags();
   const { semesters, activeSemester } = useSemesters();
@@ -79,6 +83,23 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
             </Link>
           )}
 
+          {isFeatureEnabled('iras_schedule_parser') && onOpenOnboardingWizard && (
+            <Button
+              variant="outline"
+              onClick={onOpenOnboardingWizard}
+              disabled={!isOnboardingOpen || isArchived}
+              className={`!py-2 !px-3 text-xs gap-1.5 text-blue-700 border-blue-200 hover:bg-blue-50 bg-blue-50/30 font-semibold ${
+                !isOnboardingOpen || isArchived
+                  ? 'opacity-50 cursor-not-allowed'
+                  : ''
+              }`}
+              title="Launch guided onboarding: import IRAS timetable and configure busy slots"
+            >
+              <CalendarCheck className="w-4 h-4 text-blue-600" />
+              <span>Schedule Onboarding</span>
+            </Button>
+          )}
+
           {isFeatureEnabled('iras_schedule_parser') && (
             <Button
               variant="primary"
@@ -103,6 +124,33 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Onboarding Callout Banner if not completed */}
+      {!isOnboardingCompleted && isOnboardingOpen && !isArchived && onOpenOnboardingWizard && (
+        <div className="card-enterprise p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-left bg-blue-50/40 border-blue-200 animate-fadeIn">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200">
+              <CalendarCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-slate-900 text-xs">
+                Academic Availability Setup Required ({currentSemesterName})
+              </div>
+              <p className="text-[11px] text-slate-600 mt-0.5">
+                Import your IRAS class schedule to protect lecture hours and register your weekly busy slots before shift assignments begin.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            onClick={onOpenOnboardingWizard}
+            className="!py-1.5 !px-3.5 text-xs font-semibold gap-1.5 shrink-0"
+          >
+            <CalendarCheck className="w-3.5 h-3.5" />
+            <span>Complete Setup</span>
+          </Button>
+        </div>
+      )}
 
       {/* Historical Archive Banner */}
       {isArchived && (
