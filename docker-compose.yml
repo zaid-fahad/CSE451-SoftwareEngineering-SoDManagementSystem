@@ -1,7 +1,6 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: sod_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-sod_db}
@@ -23,7 +22,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: sod_backend
     restart: unless-stopped
     depends_on:
       db:
@@ -42,8 +40,8 @@ services:
       FIRST_ADMIN_ROLE: ${FIRST_ADMIN_ROLE:-DeptManager}
       RUN_DEMO_SEED: ${RUN_DEMO_SEED:-false}
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    expose:
+      - "8000"
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
       interval: 15s
