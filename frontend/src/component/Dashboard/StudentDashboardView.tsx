@@ -8,7 +8,7 @@ import { DutySlot } from '../../model/duty';
 import { User } from '../../model/user';
 import { useFeatureFlags } from '../../context/FeatureFlagContext';
 import { useSemesters } from '../../context/SemesterContext';
-import { FileText, ArrowRightLeft, DollarSign, CalendarDays, Lock, CheckCircle2, Calendar, Archive } from 'lucide-react';
+import { FileText, ArrowRightLeft, DollarSign, CalendarDays, Lock, CheckCircle2, Calendar, Archive, Sparkles } from 'lucide-react';
 
 interface StudentDashboardViewProps {
   user: User | null;
@@ -22,6 +22,8 @@ interface StudentDashboardViewProps {
   onOpenParseModal: () => void;
   onOpenBillModal: () => void;
   onExportPNG: () => void;
+  onOpenOnboardingWizard?: () => void;
+  isOnboardingCompleted?: boolean;
 }
 
 export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
@@ -35,6 +37,8 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
   onLoadDemoData,
   onOpenParseModal,
   onExportPNG,
+  onOpenOnboardingWizard,
+  isOnboardingCompleted = true,
 }) => {
   const { isFeatureEnabled } = useFeatureFlags();
   const { semesters, activeSemester } = useSemesters();
@@ -79,6 +83,23 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
             </Link>
           )}
 
+          {isFeatureEnabled('iras_schedule_parser') && onOpenOnboardingWizard && (
+            <Button
+              variant="outline"
+              onClick={onOpenOnboardingWizard}
+              disabled={!isOnboardingOpen || isArchived}
+              className={`!py-2 !px-3 text-xs gap-1.5 text-indigo-700 border-indigo-200 hover:bg-indigo-50 bg-indigo-50/40 font-semibold ${
+                !isOnboardingOpen || isArchived
+                  ? 'opacity-50 cursor-not-allowed'
+                  : ''
+              }`}
+              title="Launch guided onboarding: import IRAS timetable and configure busy slots"
+            >
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <span>Schedule Onboarding</span>
+            </Button>
+          )}
+
           {isFeatureEnabled('iras_schedule_parser') && (
             <Button
               variant="primary"
@@ -103,6 +124,33 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Onboarding Callout Banner if not completed */}
+      {!isOnboardingCompleted && isOnboardingOpen && !isArchived && onOpenOnboardingWizard && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-left shadow-xs animate-fadeIn">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2 bg-blue-600 text-white rounded-lg shrink-0 shadow-xs">
+              <Sparkles className="w-4 h-4 text-amber-300" />
+            </div>
+            <div>
+              <div className="font-bold text-slate-900 text-xs">
+                Complete Your Schedule Onboarding for {currentSemesterName}
+              </div>
+              <p className="text-[11px] text-slate-600 mt-0.5">
+                Import your IRAS class routine to lock lecture hours, then mark your busy slots so managers know when you are available for duty.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="primary"
+            onClick={onOpenOnboardingWizard}
+            className="!py-1.5 !px-3.5 text-xs font-bold gap-1.5 shrink-0 bg-blue-600 hover:bg-blue-700"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Start Onboarding</span>
+          </Button>
+        </div>
+      )}
 
       {/* Historical Archive Banner */}
       {isArchived && (
