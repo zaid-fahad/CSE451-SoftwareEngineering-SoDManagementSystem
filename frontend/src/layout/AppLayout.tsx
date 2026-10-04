@@ -226,7 +226,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <span className="font-bold text-sm tracking-tight text-slate-900 leading-tight">SoD Portal</span>
                 <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded-full uppercase tracking-wider">Enterprise</span>
               </div>
-              <span className="text-[11px] font-medium text-slate-500 block leading-tight">Dept. of Computer Science & Engineering</span>
+              <span className="text-[11px] font-medium text-slate-500 block leading-tight">Department of Physical Sciences</span>
             </div>
           </div>
         </div>

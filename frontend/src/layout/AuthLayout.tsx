@@ -52,7 +52,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitl
           </div>
 
           <div className="pt-6 text-[11px] text-slate-500 border-t border-slate-800">
-            Department of Computer Science & Engineering
+            Department of Physical Sciences
           </div>
         </div>
 
