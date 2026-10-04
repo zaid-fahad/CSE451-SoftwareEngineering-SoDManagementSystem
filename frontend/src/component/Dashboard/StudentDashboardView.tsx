@@ -8,7 +8,7 @@ import { DutySlot } from '../../model/duty';
 import { User } from '../../model/user';
 import { useFeatureFlags } from '../../context/FeatureFlagContext';
 import { useSemesters } from '../../context/SemesterContext';
-import { FileText, ArrowRightLeft, DollarSign, CalendarDays, Lock, CheckCircle2, Calendar, Archive, Sparkles } from 'lucide-react';
+import { FileText, ArrowRightLeft, DollarSign, CalendarDays, Lock, CheckCircle2, Calendar, Archive, CalendarCheck } from 'lucide-react';
 
 interface StudentDashboardViewProps {
   user: User | null;
@@ -88,14 +88,14 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
               variant="outline"
               onClick={onOpenOnboardingWizard}
               disabled={!isOnboardingOpen || isArchived}
-              className={`!py-2 !px-3 text-xs gap-1.5 text-indigo-700 border-indigo-200 hover:bg-indigo-50 bg-indigo-50/40 font-semibold ${
+              className={`!py-2 !px-3 text-xs gap-1.5 text-blue-700 border-blue-200 hover:bg-blue-50 bg-blue-50/30 font-semibold ${
                 !isOnboardingOpen || isArchived
                   ? 'opacity-50 cursor-not-allowed'
                   : ''
               }`}
               title="Launch guided onboarding: import IRAS timetable and configure busy slots"
             >
-              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <CalendarCheck className="w-4 h-4 text-blue-600" />
               <span>Schedule Onboarding</span>
             </Button>
           )}
@@ -127,27 +127,27 @@ export const StudentDashboardView: React.FC<StudentDashboardViewProps> = ({
 
       {/* Onboarding Callout Banner if not completed */}
       {!isOnboardingCompleted && isOnboardingOpen && !isArchived && onOpenOnboardingWizard && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-left shadow-xs animate-fadeIn">
+        <div className="card-enterprise p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-left bg-blue-50/40 border-blue-200 animate-fadeIn">
           <div className="flex items-start sm:items-center gap-3">
-            <div className="p-2 bg-blue-600 text-white rounded-lg shrink-0 shadow-xs">
-              <Sparkles className="w-4 h-4 text-amber-300" />
+            <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 border border-blue-200">
+              <CalendarCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="font-bold text-slate-900 text-xs">
-                Complete Your Schedule Onboarding for {currentSemesterName}
+                Academic Availability Setup Required ({currentSemesterName})
               </div>
               <p className="text-[11px] text-slate-600 mt-0.5">
-                Import your IRAS class routine to lock lecture hours, then mark your busy slots so managers know when you are available for duty.
+                Import your IRAS class schedule to protect lecture hours and register your weekly busy slots before shift assignments begin.
               </p>
             </div>
           </div>
           <Button
             variant="primary"
             onClick={onOpenOnboardingWizard}
-            className="!py-1.5 !px-3.5 text-xs font-bold gap-1.5 shrink-0 bg-blue-600 hover:bg-blue-700"
+            className="!py-1.5 !px-3.5 text-xs font-semibold gap-1.5 shrink-0"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            <span>Start Onboarding</span>
+            <CalendarCheck className="w-3.5 h-3.5" />
+            <span>Complete Setup</span>
           </Button>
         </div>
       )}
