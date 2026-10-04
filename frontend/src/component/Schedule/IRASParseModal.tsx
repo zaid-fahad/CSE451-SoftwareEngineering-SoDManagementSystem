@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileText, CheckCircle2, AlertCircle, ExternalLink, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, FileText, CheckCircle2, AlertCircle, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../UI/Button';
 
 interface IRASParseModalProps {
@@ -82,25 +82,15 @@ export const IRASParseModal: React.FC<IRASParseModalProps> = ({ isOpen, onClose,
               <label htmlFor="irasText" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
                 Raw Timetable Text
               </label>
-              <div className="flex items-center gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setShowExamplePreview(!showExamplePreview)}
-                  className="text-blue-700 hover:text-blue-900 font-medium flex items-center gap-1 cursor-pointer"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>{showExamplePreview ? 'Hide' : 'Example'}</span>
-                  {showExamplePreview ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                </button>
-                <a
-                  href="https://meetchuthere.com/assets/onboarding/paste-schedule-example.png"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-700 hover:text-blue-900 font-medium flex items-center gap-1 hover:underline"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowExamplePreview(!showExamplePreview)}
+                className="text-xs font-medium text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer bg-blue-50/70 hover:bg-blue-100/70 px-2 py-0.5 rounded border border-blue-200 transition-colors"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>{showExamplePreview ? 'Hide Example' : 'View Example'}</span>
+                {showExamplePreview ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
             </div>
             <textarea
               id="irasText"
