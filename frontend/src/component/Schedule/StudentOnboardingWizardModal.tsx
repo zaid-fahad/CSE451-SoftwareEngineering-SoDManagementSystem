@@ -12,6 +12,10 @@ import {
   Layers,
   HelpCircle,
   Check,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '../UI/Button';
 import { AvailabilitySlot, DayOfWeek } from '../../model/schedule';
@@ -43,6 +47,7 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
   const [isParsing, setIsParsing] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [parsedCount, setParsedCount] = useState<number | null>(null);
+  const [showExamplePreview, setShowExamplePreview] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -242,18 +247,72 @@ export const StudentOnboardingWizardModal: React.FC<StudentOnboardingWizardModal
                   className="w-full bg-slate-50 text-slate-900 text-xs rounded-xl p-3.5 border border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-1 focus:ring-blue-600 outline-none font-mono transition-colors"
                 />
 
-                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 flex items-start gap-2">
-                  <HelpCircle className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Accepted Formats:</strong> IRAS portal table copy-pastes or lines formatted as{' '}
-                    <code className="text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                      [CourseCode] - [Day] - [Start]-[End]
-                    </code>{' '}
-                    (e.g.{' '}
-                    <code className="text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                      CSE451 - SAT - 09:30-11:00
-                    </code>
-                    ).
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2">
+                      <HelpCircle className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+                      <div>
+                        <strong>Accepted Formats:</strong> IRAS portal table copy-pastes or lines formatted as{' '}
+                        <code className="text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                          [CourseCode] - [Day] - [Start]-[End]
+                        </code>{' '}
+                        (e.g.{' '}
+                        <code className="text-slate-800 font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                          CSE451 - SAT - 09:30-11:00
+                        </code>
+                        ).
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Example Schedule Text to Copy Guide */}
+                  <div className="pt-2 border-t border-slate-200 flex flex-col gap-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2 text-xs">
+                      <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                        <span>How-To: Copying your routine from IRAS</span>
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setShowExamplePreview(!showExamplePreview)}
+                          className="font-medium text-blue-700 hover:text-blue-900 flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>{showExamplePreview ? 'Hide Example' : 'View Example'}</span>
+                          {showExamplePreview ? (
+                            <ChevronUp className="w-3 h-3" />
+                          ) : (
+                            <ChevronDown className="w-3 h-3" />
+                          )}
+                        </button>
+
+                        <a
+                          href="https://meetchuthere.com/assets/onboarding/paste-schedule-example.png"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-blue-700 hover:text-blue-900 flex items-center gap-1 hover:underline"
+                        >
+                          <span>Open Image</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+
+                    {showExamplePreview && (
+                      <div className="mt-1 rounded-lg border border-slate-200 bg-white p-2 space-y-1.5">
+                        <div className="text-[11px] font-medium text-slate-500">
+                          Select and copy your routine text directly from the IRAS timetable page as shown below:
+                        </div>
+                        <div className="overflow-hidden rounded border border-slate-100 max-h-72 bg-slate-50 flex items-center justify-center">
+                          <img
+                            src="https://meetchuthere.com/assets/onboarding/paste-schedule-example.png"
+                            alt="Example of schedule text to copy from IRAS"
+                            className="w-full h-auto object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

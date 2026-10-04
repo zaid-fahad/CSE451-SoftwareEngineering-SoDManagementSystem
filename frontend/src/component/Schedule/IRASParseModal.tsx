@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, FileText, CheckCircle2, AlertCircle, ExternalLink, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '../UI/Button';
 
 interface IRASParseModalProps {
@@ -13,6 +13,7 @@ export const IRASParseModal: React.FC<IRASParseModalProps> = ({ isOpen, onClose,
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isParsing, setIsParsing] = useState<boolean>(false);
+  const [showExamplePreview, setShowExamplePreview] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -77,9 +78,30 @@ export const IRASParseModal: React.FC<IRASParseModalProps> = ({ isOpen, onClose,
           )}
 
           <div className="space-y-1.5">
-            <label htmlFor="irasText" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-              Raw Timetable Text
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="irasText" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                Raw Timetable Text
+              </label>
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowExamplePreview(!showExamplePreview)}
+                  className="text-blue-700 hover:text-blue-900 font-medium flex items-center gap-1 cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{showExamplePreview ? 'Hide' : 'Example'}</span>
+                  {showExamplePreview ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+                <a
+                  href="https://meetchuthere.com/assets/onboarding/paste-schedule-example.png"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 hover:text-blue-900 font-medium flex items-center gap-1 hover:underline"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
             <textarea
               id="irasText"
               rows={6}
@@ -89,6 +111,20 @@ export const IRASParseModal: React.FC<IRASParseModalProps> = ({ isOpen, onClose,
               className="w-full bg-white text-slate-900 text-xs rounded-md p-3 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none font-mono"
             />
           </div>
+
+          {showExamplePreview && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 space-y-1.5 text-xs">
+              <div className="font-semibold text-slate-700">Example of schedule text to copy:</div>
+              <div className="overflow-hidden rounded border border-slate-200 bg-white max-h-56 flex items-center justify-center">
+                <img
+                  src="https://meetchuthere.com/assets/onboarding/paste-schedule-example.png"
+                  alt="Example of schedule text to copy"
+                  className="w-full h-auto object-contain"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
