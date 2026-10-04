@@ -20,6 +20,7 @@ export interface ColumnDef<T> {
   className?: string;
   headerClassName?: string;
   width?: string;
+  sticky?: 'left' | 'right';
 }
 
 export interface DataTableProps<T> {
@@ -232,11 +233,19 @@ export function DataTable<T>({
                     ? 'text-right'
                     : 'text-left';
 
+                const isStickyLeft = col.sticky === 'left';
+                const isStickyRight = col.sticky === 'right';
+                const stickyClass = isStickyLeft
+                  ? 'sticky left-0 z-10 bg-slate-100 shadow-[1px_0_0_0_#e2e8f0]'
+                  : isStickyRight
+                  ? 'sticky right-0 z-10 bg-slate-100 shadow-[-1px_0_0_0_#e2e8f0]'
+                  : '';
+
                 return (
                   <th
                     key={col.key}
                     style={{ width: col.width }}
-                    className={`p-3 border-r border-slate-200 last:border-r-0 ${alignClass} ${
+                    className={`p-3 border-r border-slate-200 last:border-r-0 ${alignClass} ${stickyClass} ${
                       col.headerClassName || ''
                     } ${
                       col.sortable
@@ -317,20 +326,30 @@ export function DataTable<T>({
                       onRowClick ? 'cursor-pointer' : ''
                     } ${rowClassName ? rowClassName(row, idx) : ''}`}
                   >
-                    {columns.map((col) => (
-                      <td
-                        key={col.key}
-                        className={`p-3 border-r border-slate-200 last:border-r-0 ${alignClass(
-                          col.align
-                        )} ${col.className || ''}`}
-                      >
-                        {col.render
-                          ? col.render(row, idx)
-                          : col.accessor
-                          ? col.accessor(row)
-                          : (row as any)[col.key]}
-                      </td>
-                    ))}
+                    {columns.map((col) => {
+                      const isStickyLeft = col.sticky === 'left';
+                      const isStickyRight = col.sticky === 'right';
+                      const stickyClass = isStickyLeft
+                        ? 'sticky left-0 z-1 bg-white group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0]'
+                        : isStickyRight
+                        ? 'sticky right-0 z-1 bg-white group-hover:bg-slate-50 shadow-[-1px_0_0_0_#e2e8f0]'
+                        : '';
+
+                      return (
+                        <td
+                          key={col.key}
+                          className={`p-3 border-r border-slate-200 last:border-r-0 ${alignClass(
+                            col.align
+                          )} ${stickyClass} ${col.className || ''}`}
+                        >
+                          {col.render
+                            ? col.render(row, idx)
+                            : col.accessor
+                            ? col.accessor(row)
+                            : (row as any)[col.key]}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })
