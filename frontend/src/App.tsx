@@ -23,6 +23,7 @@ import { SemesterManagementPage } from './pages/SemesterManagementPage';
 import { HistoricalArchiveHubPage } from './pages/HistoricalArchiveHubPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { PendingApprovalPage } from './pages/PendingApprovalPage';
+import { FacultyRegisterPage } from './pages/FacultyRegisterPage';
 import { ProtectedRoute } from './component/Auth/ProtectedRoute';
 
 export const App: React.FC = () => {
@@ -45,6 +46,7 @@ export const App: React.FC = () => {
                 </FeatureGuardedRoute>
               }
             />
+            <Route path="/register/faculty" element={<FacultyRegisterPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/pending-approval" element={<PendingApprovalPage />} />
 

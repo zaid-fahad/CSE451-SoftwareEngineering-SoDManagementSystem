@@ -308,4 +308,102 @@ async def test_student_pending_approval_workflow(db: AsyncSession):
         pending_after = await ac.get("/api/v1/auth/pending-students", headers=mgr_headers)
         assert applicant_id not in [s["id"] for s in pending_after.json()]
 
+@pytest.mark.asyncio
+async def test_faculty_invite_and_registration_workflow(db: AsyncSession):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        # 1. Setup DeptManager
+        mgr = User(
+            name="Dept Chair Two",
+            email="dept_chair2@univ.edu",
+            department_id="DMGR-TEST-03",
+            hashed_password=hash_password("chair2_pass"),
+            role="DeptManager"
+        )
+        db.add(mgr)
+        await db.commit()
+
+        login_mgr = await ac.post("/api/v1/auth/login", json={"email": "dept_chair2@univ.edu", "password": "chair2_pass"})
+        mgr_token = login_mgr.json()["access_token"]
+        mgr_headers = {"Authorization": f"Bearer {mgr_token}"}
+
+        # 2. DeptManager generates faculty invite token
+        invite_res = await ac.post("/api/v1/auth/invites/faculty", headers=mgr_headers)
+        assert invite_res.status_code == 200
+        token_data = invite_res.json()
+        assert "token" in token_data
+        assert token_data["role"] == "Faculty"
+        token = token_data["token"]
+
+        # Non-manager generating token should be 403
+        student = User(
+            name="Regular Student",
+            email="reg_student@univ.edu",
+            department_id="STU-0099",
+            hashed_password=hash_password("stu_pass"),
+            role="Student"
+        )
+        db.add(student)
+        await db.commit()
+        login_stu = await ac.post("/api/v1/auth/login", json={"email": "reg_student@univ.edu", "password": "stu_pass"})
+        stu_token = login_stu.json()["access_token"]
+        stu_headers = {"Authorization": f"Bearer {stu_token}"}
+        unauth_invite = await ac.post("/api/v1/auth/invites/faculty", headers=stu_headers)
+        assert unauth_invite.status_code == 403
+
+        # 3. Validate token
+        val_res = await ac.get(f"/api/v1/auth/invites/validate?token={token}")
+        assert val_res.status_code == 200
+        assert val_res.json()["valid"] is True
+
+        # Invalid token check
+        bad_val = await ac.get("/api/v1/auth/invites/validate?token=non_existent_token")
+        assert bad_val.status_code == 200
+        assert bad_val.json()["valid"] is False
+
+        # 4. Faculty registers with valid token
+        reg_res = await ac.post(
+            "/api/v1/auth/register/faculty",
+            json={
+                "name": "Prof Charles Xavier",
+                "email": "xavier@univ.edu",
+                "department_id": "FAC-X-01",
+                "password": "professor_password",
+                "token": token
+            }
+        )
+        assert reg_res.status_code == 201
+        fac_data = reg_res.json()
+        fac_id = fac_data["id"]
+        assert fac_data["role"] == "Faculty"
+        assert fac_data["approval_status"] == "Pending"
+
+        # 5. Token reuse is blocked
+        reuse_res = await ac.post(
+            "/api/v1/auth/register/faculty",
+            json={
+                "name": "Prof Magneto",
+                "email": "magneto@univ.edu",
+                "department_id": "FAC-MAG-01",
+                "password": "magneto_password",
+                "token": token
+            }
+        )
+        assert reuse_res.status_code == 400
+
+        # 6. DeptManager lists pending faculty
+        pending_fac_res = await ac.get("/api/v1/auth/pending-faculty", headers=mgr_headers)
+        assert pending_fac_res.status_code == 200
+        pending_fac_ids = [f["id"] for f in pending_fac_res.json()]
+        assert fac_id in pending_fac_ids
+
+        # 7. DeptManager approves faculty member
+        approve_fac_res = await ac.post(f"/api/v1/auth/users/{fac_id}/approve", headers=mgr_headers)
+        assert approve_fac_res.status_code == 200
+        assert approve_fac_res.json()["approval_status"] == "Approved"
+
+        # 8. Verified no longer in pending faculty list
+        pending_fac_after = await ac.get("/api/v1/auth/pending-faculty", headers=mgr_headers)
+        assert fac_id not in [f["id"] for f in pending_fac_after.json()]
+
+
 

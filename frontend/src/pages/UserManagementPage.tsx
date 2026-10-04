@@ -20,9 +20,12 @@ import {
   Clock,
   CheckCheck,
   XCircle,
+  Share2,
+  GraduationCap,
 } from 'lucide-react';
 import { User } from '../model/user';
 import { DataTable, ColumnDef } from '../component/UI/DataTable';
+import { ShareFacultyInviteModal } from '../component/User/ShareFacultyInviteModal';
 
 export const UserManagementPage: React.FC = () => {
   const { user: currentUser } = useAuth();
@@ -31,8 +34,11 @@ export const UserManagementPage: React.FC = () => {
   const {
     users,
     pendingStudents,
+    pendingFaculty,
     approveStudent,
     rejectStudent,
+    approveFaculty,
+    rejectFaculty,
     addUser,
     updateUser,
     assignRfidToUser,
@@ -51,6 +57,8 @@ export const UserManagementPage: React.FC = () => {
   }, [activeSemester, selectedSemester]);
 
   const [activeTab, setActiveTab] = useState<'directory' | 'pending'>('directory');
+  const [pendingSubTab, setPendingSubTab] = useState<'students' | 'faculty'>('students');
+  const [isFacultyInviteModalOpen, setIsFacultyInviteModalOpen] = useState<boolean>(false);
   const [pendingHoursLimits, setPendingHoursLimits] = useState<Record<string, number>>({});
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
@@ -94,6 +102,35 @@ export const UserManagementPage: React.FC = () => {
       setTimeout(() => setToastMsg(null), 3500);
     } catch {
       setToastMsg(`Failed to reject ${student.name}.`);
+      setTimeout(() => setToastMsg(null), 3500);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleApproveFacultyMember = async (faculty: User) => {
+    setActionLoadingId(faculty.id);
+    try {
+      await approveFaculty(faculty.id);
+      setToastMsg(`Approved faculty account for ${faculty.name}!`);
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch {
+      setToastMsg(`Failed to approve faculty ${faculty.name}.`);
+      setTimeout(() => setToastMsg(null), 3500);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRejectFacultyMember = async (faculty: User) => {
+    if (!confirm(`Are you sure you want to reject registration for ${faculty.name}?`)) return;
+    setActionLoadingId(faculty.id);
+    try {
+      await rejectFaculty(faculty.id);
+      setToastMsg(`Registration for ${faculty.name} rejected.`);
+      setTimeout(() => setToastMsg(null), 3500);
+    } catch {
+      setToastMsg(`Failed to reject faculty ${faculty.name}.`);
       setTimeout(() => setToastMsg(null), 3500);
     } finally {
       setActionLoadingId(null);
@@ -317,6 +354,17 @@ export const UserManagementPage: React.FC = () => {
             </select>
           </div>
 
+          {isDeptManager && (
+            <Button
+              variant="outline"
+              onClick={() => setIsFacultyInviteModalOpen(true)}
+              className="!py-2 !px-3.5 text-xs gap-1.5 self-start sm:self-auto !text-purple-700 !border-purple-200 hover:!bg-purple-50 font-semibold"
+            >
+              <Share2 className="w-4 h-4 text-purple-600" />
+              <span>Invite Faculty</span>
+            </Button>
+          )}
+
           <Button
             variant="primary"
             onClick={() => setIsAddModalOpen(true)}
@@ -360,10 +408,10 @@ export const UserManagementPage: React.FC = () => {
           }`}
         >
           <Clock className="w-4 h-4" />
-          <span>Pending Student Approvals</span>
-          {pendingStudents.length > 0 ? (
+          <span>Pending Approvals</span>
+          {pendingStudents.length + pendingFaculty.length > 0 ? (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white animate-pulse">
-              {pendingStudents.length}
+              {pendingStudents.length + pendingFaculty.length}
             </span>
           ) : (
             <span
@@ -450,120 +498,267 @@ export const UserManagementPage: React.FC = () => {
         </>
       ) : (
         <div className="space-y-4">
-          <div className="card-enterprise p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-amber-50/50 border-amber-200">
-            <div className="space-y-1">
-              <h2 className="text-sm font-bold text-amber-950 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-600" />
-                <span>Pending Student Assistant Registrations ({pendingStudents.length})</span>
-              </h2>
-              <p className="text-xs text-amber-800">
-                Self-registered student assistants require department verification and weekly duty hour allocation before they can claim duty shifts.
-              </p>
-            </div>
-            <div className="text-xs font-semibold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-lg">
-              Standard Default Quota: 10.0 hrs/week
-            </div>
+          {/* Sub-tab Navigation */}
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+            <button
+              type="button"
+              onClick={() => setPendingSubTab('students')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                pendingSubTab === 'students'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Student Applicants</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                pendingSubTab === 'students' ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {pendingStudents.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPendingSubTab('faculty')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                pendingSubTab === 'faculty'
+                  ? 'bg-purple-700 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>Faculty Applicants</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                pendingSubTab === 'faculty' ? 'bg-purple-900 text-purple-100' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {pendingFaculty.length}
+              </span>
+            </button>
           </div>
 
-          {pendingStudents.length === 0 ? (
-            <div className="card-enterprise p-12 text-center space-y-3 bg-white">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-                <CheckCheck className="w-6 h-6" />
+          {pendingSubTab === 'students' ? (
+            <>
+              <div className="card-enterprise p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-amber-50/50 border-amber-200">
+                <div className="space-y-1">
+                  <h2 className="text-sm font-bold text-amber-950 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-600" />
+                    <span>Pending Student Assistant Registrations ({pendingStudents.length})</span>
+                  </h2>
+                  <p className="text-xs text-amber-800">
+                    Self-registered student assistants require department verification and weekly duty hour allocation before they can claim duty shifts.
+                  </p>
+                </div>
+                <div className="text-xs font-semibold text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-lg">
+                  Standard Default Quota: 10.0 hrs/week
+                </div>
               </div>
-              <h3 className="text-base font-bold text-slate-800">All Student Registrations Processed</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
-                There are no student assistant applications currently awaiting approval. When new students sign up via the semester onboarding link, they will appear here.
-              </p>
-            </div>
-          ) : (
-            <div className="card-enterprise overflow-hidden bg-white">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
-                    <tr>
-                      <th className="py-3.5 px-4">Student Details</th>
-                      <th className="py-3.5 px-4">Institutional Email</th>
-                      <th className="py-3.5 px-4 text-center">Assigned Role</th>
-                      <th className="py-3.5 px-4 text-center">Weekly Hours Limit</th>
-                      <th className="py-3.5 px-4 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {pendingStudents.map((s) => {
-                      const limit = pendingHoursLimits[s.id] ?? s.weekly_hours_limit ?? 10.0;
-                      const isLoadingAction = actionLoadingId === s.id;
-                      return (
-                        <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0">
-                                {s.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div>
-                                <div className="font-bold text-slate-900 text-sm leading-tight">{s.name}</div>
-                                <div className="text-[11px] text-slate-500 font-mono mt-0.5">ID: {s.department_id}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 font-mono text-slate-600">
-                            {s.email}
-                          </td>
-                          <td className="py-3.5 px-4 text-center">
-                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-blue-50 text-blue-700 border-blue-200">
-                              {s.role}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 text-center">
-                            <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1">
-                              <input
-                                type="number"
-                                min="1"
-                                max="40"
-                                step="0.5"
-                                value={limit}
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value);
-                                  setPendingHoursLimits((prev) => ({
-                                    ...prev,
-                                    [s.id]: isNaN(val) ? 10.0 : val,
-                                  }));
-                                }}
-                                className="w-14 bg-transparent font-bold text-slate-800 text-xs outline-none text-right"
-                              />
-                              <span className="text-[11px] font-medium text-slate-500">hrs/wk</span>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              <Button
-                                type="button"
-                                variant="primary"
-                                onClick={() => handleApproveStudent(s)}
-                                disabled={isLoadingAction}
-                                className="!py-1 !px-3 text-xs gap-1 font-semibold !bg-emerald-600 hover:!bg-emerald-700 text-white"
-                              >
-                                <CheckCheck className="w-3.5 h-3.5" />
-                                <span>Approve</span>
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => handleRejectStudent(s)}
-                                disabled={isLoadingAction}
-                                className="!py-1 !px-3 text-xs gap-1 font-semibold text-rose-700 border-rose-200 hover:bg-rose-50"
-                              >
-                                <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                                <span>Reject</span>
-                              </Button>
-                            </div>
-                          </td>
+
+              {pendingStudents.length === 0 ? (
+                <div className="card-enterprise p-12 text-center space-y-3 bg-white">
+                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                    <CheckCheck className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-800">All Student Registrations Processed</h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    There are no student assistant applications currently awaiting approval. When new students sign up via the semester onboarding link, they will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="card-enterprise overflow-hidden bg-white">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                        <tr>
+                          <th className="py-3.5 px-4">Student Details</th>
+                          <th className="py-3.5 px-4">Institutional Email</th>
+                          <th className="py-3.5 px-4 text-center">Assigned Role</th>
+                          <th className="py-3.5 px-4 text-center">Weekly Hours Limit</th>
+                          <th className="py-3.5 px-4 text-center">Actions</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {pendingStudents.map((s) => {
+                          const limit = pendingHoursLimits[s.id] ?? s.weekly_hours_limit ?? 10.0;
+                          const isLoadingAction = actionLoadingId === s.id;
+                          return (
+                            <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0">
+                                    {s.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-slate-900 text-sm leading-tight">{s.name}</div>
+                                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">ID: {s.department_id}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4 font-mono text-slate-600">
+                                {s.email}
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-blue-50 text-blue-700 border-blue-200">
+                                  {s.role}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="40"
+                                    step="0.5"
+                                    value={limit}
+                                    onChange={(e) => {
+                                      const val = parseFloat(e.target.value);
+                                      setPendingHoursLimits((prev) => ({
+                                        ...prev,
+                                        [s.id]: isNaN(val) ? 10.0 : val,
+                                      }));
+                                    }}
+                                    className="w-14 bg-transparent font-bold text-slate-800 text-xs outline-none text-right"
+                                  />
+                                  <span className="text-[11px] font-medium text-slate-500">hrs/wk</span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="primary"
+                                    onClick={() => handleApproveStudent(s)}
+                                    disabled={isLoadingAction}
+                                    className="!py-1 !px-3 text-xs gap-1 font-semibold !bg-emerald-600 hover:!bg-emerald-700 text-white"
+                                  >
+                                    <CheckCheck className="w-3.5 h-3.5" />
+                                    <span>Approve</span>
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => handleRejectStudent(s)}
+                                    disabled={isLoadingAction}
+                                    className="!py-1 !px-3 text-xs gap-1 font-semibold text-rose-700 border-rose-200 hover:bg-rose-50"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>Reject</span>
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="card-enterprise p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-purple-50/50 border-purple-200">
+                <div className="space-y-1">
+                  <h2 className="text-sm font-bold text-purple-950 flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-purple-600" />
+                    <span>Pending Faculty Registrations ({pendingFaculty.length})</span>
+                  </h2>
+                  <p className="text-xs text-purple-800">
+                    Faculty who self-registered via an invite link require department verification before portal and roster permissions are activated.
+                  </p>
+                </div>
+                {isDeptManager && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsFacultyInviteModalOpen(true)}
+                    className="!py-1.5 !px-3 text-xs gap-1.5 !text-purple-700 !border-purple-200 hover:!bg-purple-100 font-semibold shrink-0"
+                  >
+                    <Share2 className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Generate New Invite</span>
+                  </Button>
+                )}
               </div>
-            </div>
+
+              {pendingFaculty.length === 0 ? (
+                <div className="card-enterprise p-12 text-center space-y-3 bg-white">
+                  <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
+                    <CheckCheck className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-800">No Pending Faculty Applications</h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    There are no faculty members currently awaiting verification. Use the "Invite Faculty" button to generate a single-use onboarding link.
+                  </p>
+                </div>
+              ) : (
+                <div className="card-enterprise overflow-hidden bg-white">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
+                        <tr>
+                          <th className="py-3.5 px-4">Faculty Member</th>
+                          <th className="py-3.5 px-4">Institutional Email</th>
+                          <th className="py-3.5 px-4 text-center">Assigned Role</th>
+                          <th className="py-3.5 px-4 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {pendingFaculty.map((f) => {
+                          const isLoadingAction = actionLoadingId === f.id;
+                          return (
+                            <tr key={f.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-800 font-bold text-xs flex items-center justify-center shrink-0">
+                                    {f.name.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-slate-900 text-sm leading-tight">{f.name}</div>
+                                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">ID: {f.department_id}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3.5 px-4 font-mono text-slate-600">
+                                {f.email}
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border bg-purple-50 text-purple-700 border-purple-200">
+                                  {f.role}
+                                </span>
+                              </td>
+                              <td className="py-3.5 px-4 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="primary"
+                                    onClick={() => handleApproveFacultyMember(f)}
+                                    disabled={isLoadingAction}
+                                    className="!py-1 !px-3 text-xs gap-1 font-semibold !bg-emerald-600 hover:!bg-emerald-700 text-white"
+                                  >
+                                    <CheckCheck className="w-3.5 h-3.5" />
+                                    <span>Approve</span>
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => handleRejectFacultyMember(f)}
+                                    disabled={isLoadingAction}
+                                    className="!py-1 !px-3 text-xs gap-1 font-semibold text-rose-700 border-rose-200 hover:bg-rose-50"
+                                  >
+                                    <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>Reject</span>
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -648,6 +843,11 @@ export const UserManagementPage: React.FC = () => {
         user={passwordTargetUser}
         onClose={() => setPasswordTargetUser(null)}
         onResetPassword={handleResetPassword}
+      />
+
+      <ShareFacultyInviteModal
+        isOpen={isFacultyInviteModalOpen}
+        onClose={() => setIsFacultyInviteModalOpen(false)}
       />
     </div>
   );

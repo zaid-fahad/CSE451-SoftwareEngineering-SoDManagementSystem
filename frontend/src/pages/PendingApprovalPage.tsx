@@ -22,10 +22,11 @@ export const PendingApprovalPage: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role !== 'Student' || user.approval_status === 'Approved') {
+  if ((user.role !== 'Student' && user.role !== 'Faculty') || user.approval_status === 'Approved') {
     return <Navigate to="/dashboard" replace />;
   }
 
+  const isFaculty = user.role === 'Faculty';
   const isRejected = user.approval_status === 'Rejected';
 
   const handleCheckStatus = async () => {
@@ -101,11 +102,15 @@ export const PendingApprovalPage: React.FC = () => {
               <h2 className="text-xl font-bold text-white mt-1.5">
                 {isRejected
                   ? 'Registration Not Approved'
+                  : isFaculty
+                  ? 'Faculty Registration Pending Department Approval'
                   : 'Application Pending Department Approval'}
               </h2>
               <p className="text-xs text-slate-400 mt-1">
                 {isRejected
                   ? 'Your onboarding request could not be approved by the Department Manager.'
+                  : isFaculty
+                  ? 'Your faculty profile has been created and is awaiting verification and portal access activation.'
                   : 'Your account has been created and is awaiting verification and weekly hour quota assignment.'}
               </p>
             </div>
@@ -116,7 +121,7 @@ export const PendingApprovalPage: React.FC = () => {
             <div className="space-y-1">
               <span className="text-slate-500 font-semibold uppercase text-[10px] tracking-wider flex items-center gap-1">
                 <User className="w-3 h-3 text-slate-400" />
-                Student Name
+                {isFaculty ? 'Faculty Name' : 'Student Name'}
               </span>
               <div className="font-bold text-white">{user.name}</div>
             </div>
@@ -153,17 +158,31 @@ export const PendingApprovalPage: React.FC = () => {
                 <ShieldAlert className="w-4 h-4 text-amber-400" />
                 <span>What happens next?</span>
               </div>
-              <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-400 leading-relaxed pl-1">
-                <li>
-                  <strong>Manager Verification:</strong> The Department Manager reviews your student credentials against active course enrollment.
-                </li>
-                <li>
-                  <strong>Weekly Limit Allocation:</strong> You will be assigned a contractual weekly hour limit (standard 10.0 hours/week).
-                </li>
-                <li>
-                  <strong>Full Roster Access:</strong> Once approved, you can immediately access the Duty Manager, submit IRAS schedules, and claim payroll slots.
-                </li>
-              </ol>
+              {isFaculty ? (
+                <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-400 leading-relaxed pl-1">
+                  <li>
+                    <strong>Manager Verification:</strong> The Department Manager reviews and confirms your departmental faculty appointment.
+                  </li>
+                  <li>
+                    <strong>Portal Activation:</strong> Course management, room scheduling, and student duty oversight permissions will be unlocked.
+                  </li>
+                  <li>
+                    <strong>Full Faculty Access:</strong> Once approved, you can immediately sign in to access the Faculty Portal and assign lab duties.
+                  </li>
+                </ol>
+              ) : (
+                <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-400 leading-relaxed pl-1">
+                  <li>
+                    <strong>Manager Verification:</strong> The Department Manager reviews your student credentials against active course enrollment.
+                  </li>
+                  <li>
+                    <strong>Weekly Limit Allocation:</strong> You will be assigned a contractual weekly hour limit (standard 10.0 hours/week).
+                  </li>
+                  <li>
+                    <strong>Full Roster Access:</strong> Once approved, you can immediately access the Duty Manager, submit IRAS schedules, and claim payroll slots.
+                  </li>
+                </ol>
+              )}
             </div>
           )}
 

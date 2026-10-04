@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { User, Mail, Lock, Building, IdCard, AlertCircle, CheckCircle2, Calendar } from 'lucide-react';
+import { User, Mail, Lock, IdCard, AlertCircle, CheckCircle2, Calendar } from 'lucide-react';
 import { AuthLayout } from '../layout/AuthLayout';
 import { Input } from '../component/UI/Input';
 import { Button } from '../component/UI/Button';
@@ -104,23 +104,72 @@ export const Register: React.FC = () => {
     }
   };
 
+  if (!semesterParam) {
+    return (
+      <AuthLayout
+        title="Registration Restricted"
+        subtitle="Invitation or Onboarding Link Required"
+      >
+        <div className="space-y-4 text-left">
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2">
+            <div className="flex items-center gap-2 font-bold text-xs text-amber-950">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Public Self-Registration is Restricted</span>
+            </div>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Open self-registration without departmental context is turned off. Access is exclusively granted through role-specific onboarding links:
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs space-y-2.5">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center font-bold shrink-0 text-[10px]">
+                1
+              </div>
+              <div>
+                <strong className="text-slate-900">Student Assistants:</strong>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Must register via the active <em>Semester Student Onboarding Link</em> shared by your Department Manager.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 pt-1 border-t border-slate-200">
+              <div className="w-5 h-5 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0 text-[10px]">
+                2
+              </div>
+              <div>
+                <strong className="text-slate-900">Faculty Members:</strong>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Must register via a tokenized <em>Faculty Invitation Link</em> provided by your Department Manager.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Link to="/login">
+              <Button type="button" fullWidth variant="primary" className="text-xs">
+                Return to Sign In
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout
-      title={semesterParam ? `Join ${semesterParam}` : 'Create Account'}
-      subtitle={
-        semesterParam
-          ? `Department onboarding portal for ${semesterParam}`
-          : 'Enter your departmental information to register'
-      }
+      title={`Join ${semesterParam}`}
+      subtitle={`Student Assistant Onboarding for ${semesterParam}`}
     >
-      {semesterParam && (
-        <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
-          <span>
-            Registering for <strong>{semesterParam}</strong> assistant duties. New student submissions will be queued for Department Manager approval.
-          </span>
-        </div>
-      )}
+      <div className="mb-4 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-2">
+        <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+        <span>
+          Registering for <strong>{semesterParam}</strong> assistant duties. New student submissions will be queued for Department Manager approval.
+        </span>
+      </div>
 
       {apiError && (
         <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
@@ -139,7 +188,7 @@ export const Register: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-3.5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <Input
-            label="Department ID"
+            label="Department ID / Student ID"
             name="departmentId"
             placeholder="e.g. 2021-1-60-001"
             icon={IdCard}
@@ -194,33 +243,17 @@ export const Register: React.FC = () => {
           />
         </div>
 
-        {/* Role Selection */}
-        <div className="flex flex-col space-y-1.5 w-full text-left">
-          <label htmlFor="role" className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
-            User Role
-          </label>
-          <div className="relative flex items-center">
-            <div className="absolute left-3 text-slate-400 pointer-events-none">
-              <Building className="w-4 h-4" />
-            </div>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full bg-white text-slate-900 text-sm rounded-md py-2.5 pl-9 pr-3 border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 outline-none transition-colors duration-150 appearance-none cursor-pointer"
-            >
-              <option value="Student">Student (Default)</option>
-              <option value="Faculty">Faculty Member</option>
-              <option value="LabManager">Lab Manager</option>
-              <option value="DeptManager">Department Manager</option>
-            </select>
-          </div>
+        {/* Locked Student Role */}
+        <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+          <span className="font-semibold text-slate-600">Assigned System Role</span>
+          <span className="font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+            Student Assistant
+          </span>
         </div>
 
         <div className="pt-2">
           <Button type="submit" fullWidth isLoading={isSubmitting}>
-            Complete Registration
+            Complete Student Registration
           </Button>
         </div>
       </form>
