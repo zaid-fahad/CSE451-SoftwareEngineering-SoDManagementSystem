@@ -41,8 +41,10 @@ export const StudentDutyList: React.FC<StudentDutyListProps> = ({ duties, user, 
       key: 'date',
       header: 'Date',
       sortable: true,
+      sticky: 'left',
+      width: '110px',
       accessor: (rec) => rec.date,
-      render: (rec) => <span className="font-mono font-medium text-slate-700">{rec.date}</span>,
+      render: (rec) => <span className="font-mono font-bold text-slate-800">{rec.date}</span>,
     },
     {
       key: 'dutyTitle',
@@ -53,13 +55,14 @@ export const StudentDutyList: React.FC<StudentDutyListProps> = ({ duties, user, 
     },
     {
       key: 'status',
-      header: 'Attendance Status',
+      header: 'Status',
       sortable: true,
       align: 'center',
+      width: '100px',
       accessor: (rec) => rec.status,
       render: (rec) => (
         <span
-          className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
             rec.status === 'Present'
               ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
               : rec.status === 'Late'
@@ -73,9 +76,10 @@ export const StudentDutyList: React.FC<StudentDutyListProps> = ({ duties, user, 
     },
     {
       key: 'hours',
-      header: 'Verified Hours',
+      header: 'Hours',
       sortable: true,
       align: 'center',
+      width: '90px',
       accessor: (rec) => rec.hoursCompleted,
       render: (rec) => (
         <span className="font-mono font-bold text-blue-800">{rec.hoursCompleted} hrs</span>
@@ -90,88 +94,127 @@ export const StudentDutyList: React.FC<StudentDutyListProps> = ({ duties, user, 
   ];
 
   return (
-    <div className="space-y-6 text-left">
-      {/* Student Work Hours & Earnings Metric Banner */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card-enterprise p-4 space-y-1 bg-blue-50/40 border-blue-200">
-          <span className="text-xs font-semibold text-slate-500">Total Logged Duty Hours</span>
-          <div className="text-2xl font-bold text-blue-900 font-mono">{totalLoggedHours.toFixed(1)} hrs</div>
+    <div className="space-y-4 sm:space-y-6 text-left">
+      {/* 1. Student Work Hours & Earnings Metric Banner (1 Row on Mobile) */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="card-enterprise p-2.5 sm:p-4 space-y-0.5 sm:space-y-1 bg-blue-50/40 border-blue-200 text-center sm:text-left">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-tight truncate block">
+            Hours
+          </span>
+          <div className="text-sm sm:text-2xl font-bold text-blue-900 font-mono">
+            {totalLoggedHours.toFixed(1)} <span className="text-[10px] sm:text-sm font-normal">hrs</span>
+          </div>
         </div>
 
-        <div className="card-enterprise p-4 space-y-1 bg-emerald-50/40 border-emerald-200">
-          <span className="text-xs font-semibold text-slate-500">Estimated Monthly Earnings</span>
-          <div className="text-2xl font-bold text-emerald-900 font-mono">${estimatedPayout.toFixed(2)}</div>
+        <div className="card-enterprise p-2.5 sm:p-4 space-y-0.5 sm:space-y-1 bg-emerald-50/40 border-emerald-200 text-center sm:text-left">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-tight truncate block">
+            Earnings
+          </span>
+          <div className="text-sm sm:text-2xl font-bold text-emerald-900 font-mono">
+            ${estimatedPayout.toFixed(0)}
+          </div>
         </div>
 
-        <div className="card-enterprise p-4 space-y-1 bg-purple-50/40 border-purple-200">
-          <span className="text-xs font-semibold text-slate-500">Attendance Reliability</span>
-          <div className="text-2xl font-bold text-purple-900 font-mono">100% Present</div>
+        <div className="card-enterprise p-2.5 sm:p-4 space-y-0.5 sm:space-y-1 bg-purple-50/40 border-purple-200 text-center sm:text-left">
+          <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-tight truncate block">
+            Reliability
+          </span>
+          <div className="text-sm sm:text-2xl font-bold text-purple-900 font-mono">
+            100%
+          </div>
         </div>
       </div>
 
-      {/* Search Input Toolbar & Duty Cards (Only shown when not in compact overview mode) */}
+      {/* 2. Search Input Toolbar & Duty Cards */}
       {!compactOverview && (
         <>
-          <div className="card-enterprise p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Assigned Duty Slots ({filteredDuties.length})
-            </h3>
+          <div className="card-enterprise p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-wider">
+                Assigned Duty Shifts ({filteredDuties.length})
+              </h3>
+            </div>
             <div className="relative w-full sm:w-72">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search duty title, location, faculty..."
+                placeholder="Search duties, location, supervisor..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white text-slate-900 text-xs rounded-md py-2 pl-9 pr-3 border border-slate-300 focus:border-blue-600 outline-none"
+                className="w-full bg-slate-50 text-slate-900 text-xs rounded-lg py-2 pl-9 pr-3 border border-slate-300 focus:bg-white focus:border-blue-600 outline-none transition-colors"
               />
             </div>
           </div>
 
           {filteredDuties.length === 0 ? (
-            <div className="card-enterprise p-8 text-center text-slate-500 space-y-2">
-              <Calendar className="w-8 h-8 text-slate-300 mx-auto" />
-              <p className="text-sm font-bold text-slate-700">No Assigned Duty Slots Found</p>
-              <p className="text-xs">Your Lab Manager or Department Manager will assign lab/exam duty windows here.</p>
+            <div className="card-enterprise p-6 text-center text-slate-500 space-y-1.5 bg-slate-50/60 border-slate-200">
+              <Calendar className="w-7 h-7 text-slate-300 mx-auto" />
+              <p className="text-xs font-bold text-slate-700">No Assigned Duty Slots Found</p>
+              <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                Assigned laboratory or examination duty windows will appear here once allocated by your supervisor.
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               {filteredDuties.map((duty) => (
-                <div key={duty.id} className="card-enterprise p-5 space-y-3 flex flex-col justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="px-2.5 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wider">
-                        {duty.type === 'LabDuty' ? 'Lab Duty' : duty.type === 'ExamDuty' ? 'Exam Duty' : 'General Duty'}
+                <div
+                  key={duty.id}
+                  className="card-enterprise p-3 sm:p-3.5 hover:border-blue-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4"
+                >
+                  {/* Left: Day & Start Time Pill */}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="px-2.5 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 flex sm:flex-col items-center justify-center gap-1 sm:gap-0 min-w-[76px] text-center shrink-0">
+                      <span className="text-[11px] sm:text-xs font-extrabold uppercase tracking-tight text-blue-700">
+                        {duty.day.slice(0, 3)}
                       </span>
-                      <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Active Assignment
+                      <span className="text-[10px] sm:text-[11px] font-semibold text-slate-600">
+                        {duty.startTime}
                       </span>
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 leading-snug">{duty.title}</h3>
-
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 font-medium">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{duty.location}</span>
+                    {/* Center: Duty Name, Type, and Location */}
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+                          {duty.title}
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded border border-slate-200 bg-slate-50 text-slate-700 text-[10px] font-semibold">
+                          {duty.type === 'LabDuty' ? 'Lab Duty' : duty.type === 'ExamDuty' ? 'Exam Duty' : 'General Duty'}
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 text-[10px] font-semibold flex items-center gap-1 border border-emerald-200">
+                          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+                          Active
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{duty.day} {duty.startTime} - {duty.endTime}</span>
+
+                      <div className="flex items-center gap-3 text-[11px] text-slate-500 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-400" />
+                          {duty.location}
+                        </span>
+                        <span>&bull;</span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          {duty.startTime} - {duty.endTime}
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {duty.assignedFaculty && (
-                    <div className="pt-2 border-t border-slate-100 text-xs text-slate-600 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500 font-medium">Supervising Faculty:</span>
-                      <span className="font-bold text-purple-800 text-[11px] flex items-center gap-1">
-                        <GraduationCap className="w-3.5 h-3.5 text-purple-600" />
-                        {duty.assignedFaculty}
-                      </span>
+                  {/* Right: Supervising Faculty Tag */}
+                  {duty.assignedFaculty ? (
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto sm:text-right shrink-0 bg-slate-50 sm:bg-transparent px-2 py-1 sm:p-0 rounded-md border border-slate-100 sm:border-0">
+                      <GraduationCap className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                      <div>
+                        <span className="text-[9px] text-slate-400 uppercase tracking-wide block hidden sm:block">
+                          Supervisor
+                        </span>
+                        <span className="text-xs font-semibold text-slate-800">
+                          {duty.assignedFaculty}
+                        </span>
+                      </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               ))}
             </div>
